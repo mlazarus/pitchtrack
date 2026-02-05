@@ -783,7 +783,46 @@
                     </div>
 
                     <div>
-                      <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Sets</h3>
+                      <div style={{ marginBottom: '2rem' }}>
+                        <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Total Summary</h3>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', background: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
+                          <thead>
+                            <tr style={{ background: '#334155' }}>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Team</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Players</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Game 1</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Game 2</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Game 3</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr style={{ background: '#1e293b' }}>
+                              <td style={{ padding: '0.75rem', fontWeight: '600', fontSize: `${stakes.tableFontSize}rem` }}>A</td>
+                              <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{teamA.join(', ') || '-'}</td>
+                              <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[0]?.scoreA.toFixed(0) || '-'}</td>
+                              <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[1]?.scoreA.toFixed(0) || '-'}</td>
+                              <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[2]?.scoreA.toFixed(0) || '-'}</td>
+                              <td style={{ padding: '0.75rem', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>
+                                {currentSetGames.length > 0 ? currentSetGames.reduce((sum, g) => sum + g.scoreA, 0).toFixed(1) : '-'}
+                              </td>
+                            </tr>
+                            <tr style={{ background: '#0f172a' }}>
+                              <td style={{ padding: '0.75rem', fontWeight: '600', fontSize: `${stakes.tableFontSize}rem` }}>B</td>
+                              <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{teamB.join(', ') || '-'}</td>
+                              <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[0]?.scoreB.toFixed(0) || '-'}</td>
+                              <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[1]?.scoreB.toFixed(0) || '-'}</td>
+                              <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[2]?.scoreB.toFixed(0) || '-'}</td>
+                              <td style={{ padding: '0.75rem', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>
+                                {currentSetGames.length > 0 ? currentSetGames.reduce((sum, g) => sum + g.scoreB, 0).toFixed(1) : '-'}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div>
+                        <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Sets</h3>
                       <div style={{ border: '2px solid #334155', borderRadius: '8px', overflow: 'hidden' }}>
                         <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -896,6 +935,7 @@
                         </div>
                       </div>
                     </div>
+                  </div>
                   </div>
                 </div>
               )}
