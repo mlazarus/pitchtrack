@@ -664,28 +664,30 @@
           <div style={{ fontFamily: "'Manrope', 'Segoe UI', system-ui, sans-serif", background: '#0a0f1e', color: '#e8edf5', minHeight: '100vh' }}>
             {/* Header */}
             <div style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', padding: '1rem 2rem', borderBottom: '3px solid #4f46e5' }}>
-              <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.025em' }}>🎮 Pitch Game Tracker</h1>
-              <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <label style={{ fontWeight: '600', fontSize: '0.875rem' }}>Table:</label>
-                <select
-                  value={currentTable}
-                  onChange={(e) => setCurrentTable(parseInt(e.target.value))}
-                  style={{
-                    padding: '0.4rem 0.8rem',
-                    borderRadius: '8px',
-                    border: '2px solid #4f46e5',
-                    background: 'white',
-                    color: '#1e293b',
-                    fontSize: '0.9rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value={1}>Table 1</option>
-                  <option value={2}>Table 2</option>
-                  <option value={3}>Table 3</option>
-                  <option value={4}>Table 4</option>
-                </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.025em' }}>🎮 Pitch Game Tracker</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <label style={{ fontWeight: '600', fontSize: '0.875rem' }}>Table:</label>
+                  <select
+                    value={currentTable}
+                    onChange={(e) => setCurrentTable(parseInt(e.target.value))}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '8px',
+                      border: '2px solid #4f46e5',
+                      background: 'white',
+                      color: '#1e293b',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value={1}>Table 1</option>
+                    <option value={2}>Table 2</option>
+                    <option value={3}>Table 3</option>
+                    <option value={4}>Table 4</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -717,9 +719,6 @@
             <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
               {activeTab === 'game' && (
                 <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                  <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: '700' }}>
-                    Game #<span style={{ color: '#6366f1' }}>{gameNumber}</span>
-                  </h2>
                   <p style={{ marginBottom: '1rem' }}>
                     <strong>Current Dealer:</strong>{' '}
                     <span style={{ color: '#f59e0b', fontWeight: '600' }}>
@@ -760,14 +759,18 @@
                   <h3 style={{ marginTop: '2rem', marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Scores</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                     <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', border: '3px solid #10b981' }}>
-                      <h4 style={{ margin: '0 0 0.5rem 0', color: '#10b981', fontSize: '1rem' }}>Team A</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                        <h4 style={{ margin: 0, color: '#10b981', fontSize: '1rem' }}>Team A</h4>
+                        <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>({teamA.join(', ') || 'No players'})</span>
+                      </div>
                       <div style={{ fontSize: '3rem', fontWeight: '800', color: '#10b981' }}>{totA.toFixed(0)}</div>
-                      <div style={{ marginTop: '0.5rem', color: '#94a3b8' }}>{teamA.join(', ') || 'No players'}</div>
                     </div>
                     <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', border: '3px solid #f59e0b' }}>
-                      <h4 style={{ margin: '0 0 0.5rem 0', color: '#f59e0b', fontSize: '1rem' }}>Team B</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                        <h4 style={{ margin: 0, color: '#f59e0b', fontSize: '1rem' }}>Team B</h4>
+                        <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>({teamB.join(', ') || 'No players'})</span>
+                      </div>
                       <div style={{ fontSize: '3rem', fontWeight: '800', color: '#f59e0b' }}>{totB.toFixed(0)}</div>
-                      <div style={{ marginTop: '0.5rem', color: '#94a3b8' }}>{teamB.join(', ') || 'No players'}</div>
                     </div>
                   </div>
 
@@ -1148,6 +1151,10 @@
                 <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
                   <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>About Pitch Game Tracker</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
+                      <span style={{ fontWeight: '600', color: '#94a3b8' }}>Games Played</span>
+                      <span style={{ color: '#6366f1', fontWeight: '700', fontSize: '1.1rem' }}>#{gameNumber}</span>
+                    </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                       <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
                       <span>2.1.0 (React)</span>
