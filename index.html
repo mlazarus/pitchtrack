@@ -129,7 +129,7 @@
         const [completedGames, setCompletedGames] = useState([]);
         const [setHistory, setSetHistory] = useState([]);
         const [currentSetGames, setCurrentSetGames] = useState([]);
-        const [stakes, setStakes] = useState({ gameScore: 4, bump: 2, points: 1, bonus: 25 });
+        const [stakes, setStakes] = useState({ gameScore: 4, bump: 2, points: 1, bonus: 25, tableFontSize: 0.9 });
         const [activeTab, setActiveTab] = useState('game');
         
         // Modal states
@@ -175,7 +175,8 @@
                 gameScore: parseFloat(stakesData.game_score) || 4,
                 bump: parseFloat(stakesData.bump) || 2,
                 points: parseFloat(stakesData.points) || 1,
-                bonus: parseFloat(stakesData.bonus) || 25
+                bonus: parseFloat(stakesData.bonus) || 25,
+                tableFontSize: parseFloat(stakesData.table_font_size) || 0.9
               });
             }
 
@@ -600,7 +601,8 @@
             game_score: stakes.gameScore,
             bump: stakes.bump,
             points: stakes.points,
-            bonus: stakes.bonus
+            bonus: stakes.bonus,
+            table_font_size: stakes.tableFontSize
           };
 
           const { data: existing } = await supabaseClient
@@ -742,9 +744,9 @@
                         <table style={{ width: '100%', borderCollapse: 'collapse', background: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
                           <thead>
                             <tr style={{ background: '#334155' }}>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem' }}>Dealer</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem' }}>A</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem' }}>B</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Dealer</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>A</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>B</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -768,9 +770,9 @@
                                       background: idx % 2 === 0 ? '#1e293b' : '#0f172a'
                                     }}
                                   >
-                                    <td style={{ padding: '0.5rem', fontSize: '0.9rem' }}>{h.dealer}</td>
-                                    <td style={{ padding: '0.5rem', fontSize: '0.9rem', color: '#10b981', fontWeight: '600' }}>{rA.toFixed(0)}</td>
-                                    <td style={{ padding: '0.5rem', fontSize: '0.9rem', color: '#f59e0b', fontWeight: '600' }}>{rB.toFixed(0)}</td>
+                                    <td style={{ padding: '0.5rem', fontSize: `${stakes.tableFontSize}rem` }}>{h.dealer}</td>
+                                    <td style={{ padding: '0.5rem', fontSize: `${stakes.tableFontSize}rem`, color: '#10b981', fontWeight: '600' }}>{rA.toFixed(0)}</td>
+                                    <td style={{ padding: '0.5rem', fontSize: `${stakes.tableFontSize}rem`, color: '#f59e0b', fontWeight: '600' }}>{rB.toFixed(0)}</td>
                                   </tr>
                                 );
                               })
@@ -787,7 +789,7 @@
                           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                               <tr style={{ background: '#334155' }}>
-                                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem', width: '80px' }}>Set #</th>
+                                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem`, width: '80px' }}>Set #</th>
                                 {(() => {
                                   // Collect unique players from set history
                                   const allPlayers = [];
@@ -800,12 +802,12 @@
                                     });
                                   });
                                   return allPlayers.map(p => (
-                                    <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem', minWidth: '120px' }}>{p}</th>
+                                    <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem`, minWidth: '120px' }}>{p}</th>
                                   ));
                                 })()}
                               </tr>
                               <tr style={{ background: '#334155', fontWeight: '700', position: 'sticky', top: '49px', zIndex: 9 }}>
-                                <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.85rem' }}>Total</th>
+                                <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem` }}>Total</th>
                                 {(() => {
                                   // Calculate totals for each player
                                   const allPlayers = [];
@@ -844,7 +846,7 @@
                                     const total = playerTotals[p];
                                     const color = total >= 0 ? '#10b981' : '#ef4444';
                                     return (
-                                      <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.85rem', color }}>${total.toFixed(1)}</th>
+                                      <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, color }}>${total.toFixed(1)}</th>
                                     );
                                   });
                                 })()}
@@ -873,14 +875,14 @@
 
                                   return (
                                     <tr key={idx} style={{ background: idx % 2 === 0 ? '#1e293b' : '#0f172a' }}>
-                                      <td style={{ padding: '0.75rem', fontSize: '0.9rem' }}>{setHistory.length - idx}</td>
+                                      <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{setHistory.length - idx}</td>
                                       {allPlayers.map(p => {
                                         let val = 0;
                                         if (set.teamA.includes(p)) val = set.teamAScore * aMult;
                                         if (set.teamB.includes(p)) val = set.teamBScore * bMult;
                                         
                                         return (
-                                          <td key={p} style={{ padding: '0.75rem', fontSize: '0.9rem', color: val !== 0 ? '#6366f1' : '#64748b', fontWeight: val !== 0 ? '600' : '400' }}>
+                                          <td key={p} style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: val !== 0 ? '#6366f1' : '#64748b', fontWeight: val !== 0 ? '600' : '400' }}>
                                             {val !== 0 ? `$${val.toFixed(1)}` : '-'}
                                           </td>
                                         );
@@ -971,12 +973,12 @@
                     <table style={{ width: '100%', borderCollapse: 'collapse', background: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
                       <thead>
                         <tr style={{ background: '#334155' }}>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem' }}>Set</th>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem' }}>Team A</th>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem' }}>Team B</th>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem' }}>A Score</th>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem' }}>B Score</th>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: '0.85rem' }}>Winner</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Set</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Team A</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Team B</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>A Score</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>B Score</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Winner</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1050,7 +1052,20 @@
                         style={inputStyle}
                       />
                     </div>
-                    <button onClick={saveStakes} style={buttonStyle('#6366f1')}>Save Stakes</button>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Table Font Size (rem):</label>
+                      <input
+                        type="number"
+                        value={stakes.tableFontSize}
+                        onChange={(e) => setStakes({ ...stakes, tableFontSize: parseFloat(e.target.value) })}
+                        min="0.5"
+                        max="2"
+                        step="0.1"
+                        style={inputStyle}
+                      />
+                      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Default: 0.9 | Range: 0.5-2.0</p>
+                    </div>
+                    <button onClick={saveStakes} style={buttonStyle('#6366f1')}>Save Settings</button>
                   </div>
                 </div>
               )}
