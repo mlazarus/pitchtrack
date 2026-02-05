@@ -136,6 +136,7 @@
         const [showScoreModal, setShowScoreModal] = useState(false);
         const [showDealerModal, setShowDealerModal] = useState(false);
         const [showEndGameModal, setShowEndGameModal] = useState(false);
+        const [showEndSessionModal, setShowEndSessionModal] = useState(false);
         const [scoreA, setScoreA] = useState('');
         const [scoreB, setScoreB] = useState('');
         const [tempDealers, setTempDealers] = useState([]);
@@ -620,6 +621,38 @@
           showToast('Stakes saved!');
         };
 
+        const endSessionSave = () => {
+          // Keep sets in database, just reset the view
+          setSetHistory([]);
+          setShowEndSessionModal(false);
+          showToast('Session ended - view reset. Sets saved in database.');
+        };
+
+        const endSessionDiscard = async () => {
+          if (!window.confirm('Are you sure? This will permanently delete all sets for this table from the database!')) {
+            return;
+          }
+
+          try {
+            // Delete all sets for current table from database
+            const { error } = await supabaseClient
+              .from('sets')
+              .delete()
+              .eq('table_number', currentTable);
+
+            if (error) {
+              showToast('Error deleting sets: ' + error.message);
+              return;
+            }
+
+            setSetHistory([]);
+            setShowEndSessionModal(false);
+            showToast('All sets discarded and deleted from database');
+          } catch (err) {
+            showToast('Error: ' + err.message);
+          }
+        };
+
         // Calculate totals
         const totA = hands.reduce((sum, h) => sum + h.scoreA, 0);
         const totB = hands.reduce((sum, h) => sum + h.scoreB, 0);
@@ -721,6 +754,7 @@
                     <button onClick={openScoreModal} style={buttonStyle('#6366f1')}>Add Score</button>
                     <button onClick={openDealerModal} style={buttonStyle('#10b981')}>Select Dealers</button>
                     <button onClick={openEndGameModal} style={buttonStyle('#ef4444')}>End Game</button>
+                    <button onClick={() => setShowEndSessionModal(true)} style={buttonStyle('#8b5cf6')}>End Session</button>
                   </div>
 
                   <h3 style={{ marginTop: '2rem', marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Scores</h3>
@@ -1264,6 +1298,53 @@
 
             {/* Toast */}
             <Toast show={toast.show} message={toast.message} />
+
+            {/* End Session Modal */}
+            <Modal show={showEndSessionModal} onClose={() => setShowEndSessionModal(false)}>
+              <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: '700', color: '#1e293b' }}>End Session</h2>
+              <p style={{ color: '#64748b', marginBottom: '1rem' }}>
+                Do you want to save or discard the sets from this session?
+              </p>
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                <p style={{ color: '#1e293b', marginBottom: '0.5rem' }}><strong>Current Session:</strong></p>
+                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Sets completed: <strong>{setHistory.length}</strong></p>
+                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Table: <strong>{currentTable}</strong></p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <button 
+                  onClick={endSessionSave}
+                  style={{ 
+                    ...buttonStyle('#10b981'), 
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start'
+                  }}
+                >
+                  <span style={{ fontWeight: '700', fontSize: '1rem' }}>Save & Reset View</span>
+                  <span style={{ fontSize: '0.75rem', opacity: 0.9, marginTop: '0.25rem' }}>Keep all sets in database, reset table view</span>
+                </button>
+                <button 
+                  onClick={endSessionDiscard}
+                  style={{ 
+                    ...buttonStyle('#ef4444'), 
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start'
+                  }}
+                >
+                  <span style={{ fontWeight: '700', fontSize: '1rem' }}>Discard Sets</span>
+                  <span style={{ fontSize: '0.75rem', opacity: 0.9, marginTop: '0.25rem' }}>Delete all sets from database permanently</span>
+                </button>
+                <button 
+                  onClick={() => setShowEndSessionModal(false)} 
+                  style={{ ...buttonStyle('#64748b'), padding: '1rem' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </Modal>
           </div>
         );
       }
