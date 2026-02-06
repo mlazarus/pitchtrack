@@ -634,9 +634,14 @@
 
         const endSessionSave = () => {
           // Keep sets in database, just reset the view
+          // Clear all session-related state
           setSetHistory([]);
+          setCurrentSetGames([]);
           setShowEndSessionModal(false);
-          showToast('Session ended - view reset. Sets saved in database.');
+          // Use setTimeout to ensure state updates have processed
+          setTimeout(() => {
+            showToast('Session ended - view reset. Sets saved in database.');
+          }, 0);
         };
 
         const endSessionDiscard = async () => {
@@ -657,8 +662,11 @@
             }
 
             setSetHistory([]);
+            setCurrentSetGames([]);
             setShowEndSessionModal(false);
-            showToast('All sets discarded and deleted from database');
+            setTimeout(() => {
+              showToast('All sets discarded and deleted from database');
+            }, 0);
           } catch (err) {
             showToast('Error: ' + err.message);
           }
