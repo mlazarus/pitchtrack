@@ -1083,10 +1083,9 @@
 
               {activeTab === 'stats' && (
                 <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                  <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>📊 Player Statistics</h2>
+                  <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>🏆 Player Leaderboard</h2>
                   
                   {(() => {
-                    // Calculate leaderboard from setHistory
                     if (setHistory.length === 0) {
                       return (
                         <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#0f172a', borderRadius: '12px' }}>
@@ -1132,25 +1131,42 @@
 
                     return (
                       <div>
-                        <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr 1fr' : '1fr 1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
-                          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#6366f1' }}>{setHistory.length}</div>
-                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Total Sets</div>
+                        {/* Filters */}
+                        <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                          <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '700' }}>Filters</h3>
+                          <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr 1fr', gap: '1rem' }}>
+                            <div>
+                              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Sort By:</label>
+                              <select style={{ ...inputStyle, padding: '0.6rem' }}>
+                                <option value="earnings">Total Earnings</option>
+                                <option value="winPct">Win Percentage</option>
+                                <option value="sets">Sets Played</option>
+                                <option value="avgPerSet">Avg Per Set</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Table:</label>
+                              <select style={{ ...inputStyle, padding: '0.6rem' }}>
+                                <option value={currentTable}>Current Table ({currentTable})</option>
+                                <option value="all">All Tables</option>
+                                <option value="1">Table 1</option>
+                                <option value="2">Table 2</option>
+                                <option value="3">Table 3</option>
+                                <option value="4">Table 4</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Min Sets:</label>
+                              <input type="number" min="0" defaultValue="0" style={{ ...inputStyle, padding: '0.6rem' }} />
+                            </div>
                           </div>
-                          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#10b981' }}>{sortedPlayers.length}</div>
-                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Active Players</div>
-                          </div>
-                          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#f59e0b' }}>Table {currentTable}</div>
-                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Current Table</div>
+                          <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#64748b' }}>
+                            💡 Tip: Filters coming soon - currently showing all data from Table {currentTable}
                           </div>
                         </div>
 
-                        <div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden' }}>
-                          <h3 style={{ padding: '1rem 1.5rem', margin: 0, fontSize: '1.1rem', fontWeight: '700', borderBottom: '2px solid #334155' }}>
-                            🏆 Leaderboard
-                          </h3>
+                        {/* Leaderboard Table */}
+                        <div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden', marginBottom: '2rem' }}>
                           <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                               <thead>
@@ -1192,6 +1208,22 @@
                                 })}
                               </tbody>
                             </table>
+                          </div>
+                        </div>
+
+                        {/* Summary Stats at Bottom */}
+                        <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr 1fr' : '1fr 1fr 1fr', gap: '1rem' }}>
+                          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#6366f1' }}>{setHistory.length}</div>
+                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Total Sets</div>
+                          </div>
+                          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#10b981' }}>{sortedPlayers.length}</div>
+                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Active Players</div>
+                          </div>
+                          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#f59e0b' }}>Table {currentTable}</div>
+                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Current Table</div>
                           </div>
                         </div>
                       </div>
