@@ -132,6 +132,14 @@
         const [stakes, setStakes] = useState({ gameScore: 4, bump: 2, points: 1, bonus: 25, tableFontSize: 0.9 });
         const [activeTab, setActiveTab] = useState('game');
         
+        // Date filters
+        const today = new Date();
+        const yearStart = new Date(today.getFullYear(), 0, 1);
+        const [leaderboardStartDate, setLeaderboardStartDate] = useState(yearStart.toISOString().split('T')[0]);
+        const [leaderboardEndDate, setLeaderboardEndDate] = useState(today.toISOString().split('T')[0]);
+        const [statsStartDate, setStatsStartDate] = useState(yearStart.toISOString().split('T')[0]);
+        const [statsEndDate, setStatsEndDate] = useState(today.toISOString().split('T')[0]);
+        
         // Modal states
         const [showScoreModal, setShowScoreModal] = useState(false);
         const [showDealerModal, setShowDealerModal] = useState(false);
@@ -693,7 +701,7 @@
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 2rem', borderBottom: '2px solid #1e293b', background: '#0f172a', flexWrap: 'wrap' }}>
-              {['game', 'players', 'stats', 'settings', 'about'].map(tab => (
+              {['game', 'players', 'leaderboard', 'stats', 'settings', 'about'].map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -710,7 +718,7 @@
                     transition: 'all 0.2s'
                   }}
                 >
-                  {tab === 'stats' ? '📊 Stats' : tab}
+                  {tab === 'leaderboard' ? '🏆 Leaderboard' : tab === 'stats' ? '📊 Stats' : tab}
                 </button>
               ))}
             </div>
@@ -1081,24 +1089,58 @@
                 </div>
               )}
 
-              {activeTab === 'stats' && (
+              {activeTab === 'leaderboard' && (
                 <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
                   <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>🏆 Player Leaderboard</h2>
                   
+                  {/* Date Filters */}
+                  <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '700' }}>Date Range</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Start Date:</label>
+                        <input 
+                          type="date" 
+                          value={leaderboardStartDate}
+                          onChange={(e) => setLeaderboardStartDate(e.target.value)}
+                          style={inputStyle}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>End Date:</label>
+                        <input 
+                          type="date" 
+                          value={leaderboardEndDate}
+                          onChange={(e) => setLeaderboardEndDate(e.target.value)}
+                          style={inputStyle}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
                   {(() => {
-                    if (setHistory.length === 0) {
+                    // Filter sets by date range
+                    const filteredSets = setHistory.filter(set => {
+                      if (!set.completed_at) return true;
+                      const setDate = new Date(set.completed_at);
+                      const startDate = new Date(leaderboardStartDate);
+                      const endDate = new Date(leaderboardEndDate + 'T23:59:59');
+                      return setDate >= startDate && setDate <= endDate;
+                    });
+
+                    if (filteredSets.length === 0) {
                       return (
                         <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#0f172a', borderRadius: '12px' }}>
-                          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-                          <p style={{ fontSize: '1.1rem' }}>No sets completed yet</p>
-                          <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Play some games to see player statistics!</p>
+                          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</div>
+                          <p style={{ fontSize: '1.1rem' }}>No sets found in this date range</p>
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Try adjusting your date filters</p>
                         </div>
                       );
                     }
 
                     const playerStats = {};
 
-                    setHistory.forEach(set => {
+                    filteredSets.forEach(set => {
                       const aMult = set.teamA.length < set.teamB.length ? 1.5 : 1;
                       const bMult = set.teamB.length < set.teamA.length ? 1.5 : 1;
 
@@ -1131,40 +1173,6 @@
 
                     return (
                       <div>
-                        {/* Filters */}
-                        <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
-                          <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '700' }}>Filters</h3>
-                          <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr 1fr', gap: '1rem' }}>
-                            <div>
-                              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Sort By:</label>
-                              <select style={{ ...inputStyle, padding: '0.6rem' }}>
-                                <option value="earnings">Total Earnings</option>
-                                <option value="winPct">Win Percentage</option>
-                                <option value="sets">Sets Played</option>
-                                <option value="avgPerSet">Avg Per Set</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Table:</label>
-                              <select style={{ ...inputStyle, padding: '0.6rem' }}>
-                                <option value={currentTable}>Current Table ({currentTable})</option>
-                                <option value="all">All Tables</option>
-                                <option value="1">Table 1</option>
-                                <option value="2">Table 2</option>
-                                <option value="3">Table 3</option>
-                                <option value="4">Table 4</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Min Sets:</label>
-                              <input type="number" min="0" defaultValue="0" style={{ ...inputStyle, padding: '0.6rem' }} />
-                            </div>
-                          </div>
-                          <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#64748b' }}>
-                            💡 Tip: Filters coming soon - currently showing all data from Table {currentTable}
-                          </div>
-                        </div>
-
                         {/* Leaderboard Table */}
                         <div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden', marginBottom: '2rem' }}>
                           <div style={{ overflowX: 'auto' }}>
@@ -1211,11 +1219,11 @@
                           </div>
                         </div>
 
-                        {/* Summary Stats at Bottom */}
+                        {/* Summary Stats */}
                         <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr 1fr' : '1fr 1fr 1fr', gap: '1rem' }}>
                           <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#6366f1' }}>{setHistory.length}</div>
-                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Total Sets</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#6366f1' }}>{filteredSets.length}</div>
+                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Sets in Range</div>
                           </div>
                           <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
                             <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#10b981' }}>{sortedPlayers.length}</div>
@@ -1229,6 +1237,43 @@
                       </div>
                     );
                   })()}
+                </div>
+              )}
+
+              {activeTab === 'stats' && (
+                <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                  <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>📊 Player Statistics</h2>
+                  
+                  {/* Date Filters */}
+                  <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '700' }}>Date Range</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Start Date:</label>
+                        <input 
+                          type="date" 
+                          value={statsStartDate}
+                          onChange={(e) => setStatsStartDate(e.target.value)}
+                          style={inputStyle}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>End Date:</label>
+                        <input 
+                          type="date" 
+                          value={statsEndDate}
+                          onChange={(e) => setStatsEndDate(e.target.value)}
+                          style={inputStyle}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#0f172a', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                    <p style={{ fontSize: '1.1rem' }}>Additional statistics coming soon!</p>
+                    <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>This tab will show detailed analytics and trends</p>
+                  </div>
                 </div>
               )}
 
