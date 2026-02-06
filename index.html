@@ -710,7 +710,7 @@
                     transition: 'all 0.2s'
                   }}
                 >
-                  {tab}
+                  {tab === 'stats' ? '📊 Stats' : tab}
                 </button>
               ))}
             </div>
@@ -1078,6 +1078,125 @@
                       </tbody>
                     </table>
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'stats' && (
+                <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                  <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>📊 Player Statistics</h2>
+                  
+                  {(() => {
+                    // Calculate leaderboard from setHistory
+                    if (setHistory.length === 0) {
+                      return (
+                        <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#0f172a', borderRadius: '12px' }}>
+                          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                          <p style={{ fontSize: '1.1rem' }}>No sets completed yet</p>
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Play some games to see player statistics!</p>
+                        </div>
+                      );
+                    }
+
+                    const playerStats = {};
+
+                    setHistory.forEach(set => {
+                      const aMult = set.teamA.length < set.teamB.length ? 1.5 : 1;
+                      const bMult = set.teamB.length < set.teamA.length ? 1.5 : 1;
+
+                      set.teamA.forEach(p => {
+                        if (!playerStats[p]) {
+                          playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 };
+                        }
+                        playerStats[p].sets++;
+                        const earnings = set.teamAScore * aMult;
+                        playerStats[p].totalEarnings += earnings;
+                        if (set.teamAScore > set.teamBScore) playerStats[p].wins++;
+                        else playerStats[p].losses++;
+                      });
+
+                      set.teamB.forEach(p => {
+                        if (!playerStats[p]) {
+                          playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 };
+                        }
+                        playerStats[p].sets++;
+                        const earnings = set.teamBScore * bMult;
+                        playerStats[p].totalEarnings += earnings;
+                        if (set.teamBScore > set.teamAScore) playerStats[p].wins++;
+                        else playerStats[p].losses++;
+                      });
+                    });
+
+                    const sortedPlayers = Object.keys(playerStats).sort((a, b) => 
+                      playerStats[b].totalEarnings - playerStats[a].totalEarnings
+                    );
+
+                    return (
+                      <div>
+                        <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr 1fr' : '1fr 1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#6366f1' }}>{setHistory.length}</div>
+                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Total Sets</div>
+                          </div>
+                          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#10b981' }}>{sortedPlayers.length}</div>
+                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Active Players</div>
+                          </div>
+                          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#f59e0b' }}>Table {currentTable}</div>
+                            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.5rem' }}>Current Table</div>
+                          </div>
+                        </div>
+
+                        <div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden' }}>
+                          <h3 style={{ padding: '1rem 1.5rem', margin: 0, fontSize: '1.1rem', fontWeight: '700', borderBottom: '2px solid #334155' }}>
+                            🏆 Leaderboard
+                          </h3>
+                          <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                              <thead>
+                                <tr style={{ background: '#334155' }}>
+                                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Rank</th>
+                                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Player</th>
+                                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Sets</th>
+                                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Wins</th>
+                                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Losses</th>
+                                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Win %</th>
+                                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Total Earnings</th>
+                                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Avg/Set</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {sortedPlayers.map((p, index) => {
+                                  const stats = playerStats[p];
+                                  const winPct = ((stats.wins / stats.sets) * 100).toFixed(1);
+                                  const avgPerSet = (stats.totalEarnings / stats.sets).toFixed(1);
+                                  const earningsColor = stats.totalEarnings >= 0 ? '#10b981' : '#ef4444';
+                                  
+                                  let rankDisplay = index + 1;
+                                  if (index === 0) rankDisplay = '🥇';
+                                  else if (index === 1) rankDisplay = '🥈';
+                                  else if (index === 2) rankDisplay = '🥉';
+
+                                  return (
+                                    <tr key={p} style={{ background: index % 2 === 0 ? '#1e293b' : '#0f172a', borderBottom: '1px solid #334155' }}>
+                                      <td style={{ padding: '0.75rem', fontSize: '1.2rem' }}>{rankDisplay}</td>
+                                      <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: '#e2e8f0' }}>{p}</td>
+                                      <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{stats.sets}</td>
+                                      <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#10b981', fontWeight: '600' }}>{stats.wins}</td>
+                                      <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#ef4444', fontWeight: '600' }}>{stats.losses}</td>
+                                      <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{winPct}%</td>
+                                      <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: earningsColor }}>${stats.totalEarnings.toFixed(1)}</td>
+                                      <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>${avgPerSet}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
