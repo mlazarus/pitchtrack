@@ -1239,7 +1239,8 @@
                     const filteredSets = allSets.filter(set => {
                       if (!set.completed_at) return true;
                       const setDate = new Date(set.completed_at);
-                      const startDate = new Date(leaderboardStartDate);
+                      // Parse dates as local time by adding time component
+                      const startDate = new Date(leaderboardStartDate + 'T00:00:00');
                       const endDate = new Date(leaderboardEndDate + 'T23:59:59');
                       return setDate >= startDate && setDate <= endDate;
                     });
@@ -1387,7 +1388,7 @@
                           const filteredSets = allSets.filter(set => {
                             if (!set.completed_at) return true;
                             const setDate = new Date(set.completed_at);
-                            const startDate = new Date(statsStartDate);
+                            const startDate = new Date(statsStartDate + 'T00:00:00');
                             const endDate = new Date(statsEndDate + 'T23:59:59');
                             return setDate >= startDate && setDate <= endDate;
                           });
