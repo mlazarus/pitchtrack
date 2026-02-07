@@ -141,6 +141,8 @@
         const [leaderboardEndDate, setLeaderboardEndDate] = useState(today.toISOString().split('T')[0]);
         const [statsStartDate, setStatsStartDate] = useState(yearStart.toISOString().split('T')[0]);
         const [statsEndDate, setStatsEndDate] = useState(today.toISOString().split('T')[0]);
+        const [leaderboardSets, setLeaderboardSets] = useState([]);
+        const [statsSets, setStatsSets] = useState([]);
         
         // Modal states
         const [showScoreModal, setShowScoreModal] = useState(false);
@@ -166,6 +168,24 @@
         useEffect(() => {
           loadData();
         }, [currentTable]);
+
+        useEffect(() => {
+          // Fetch leaderboard data when dates change
+          const fetchLeaderboardData = async () => {
+            const sets = await fetchAllSetsForDateRange(leaderboardStartDate, leaderboardEndDate);
+            setLeaderboardSets(sets);
+          };
+          fetchLeaderboardData();
+        }, [leaderboardStartDate, leaderboardEndDate]);
+
+        useEffect(() => {
+          // Fetch stats data when dates change
+          const fetchStatsData = async () => {
+            const sets = await fetchAllSetsForDateRange(statsStartDate, statsEndDate);
+            setStatsSets(sets);
+          };
+          fetchStatsData();
+        }, [statsStartDate, statsEndDate]);
 
         const loadData = async () => {
           try {
@@ -808,6 +828,38 @@
           showToast(`Set complete! Starting new set...`);
         };
 
+        // Fetch all sets for date range (for Stats/Leaderboard tabs)
+        const fetchAllSetsForDateRange = async (startDate, endDate) => {
+          try {
+            const start = new Date(startDate + 'T00:00:00').toISOString();
+            const end = new Date(endDate + 'T23:59:59').toISOString();
+            
+            const { data: sets, error } = await supabaseClient
+              .from('sets')
+              .select('*')
+              .gte('completed_at', start)
+              .lte('completed_at', end)
+              .order('completed_at', { ascending: false });
+
+            if (error) {
+              console.error('Error fetching sets:', error);
+              return [];
+            }
+
+            return sets?.map(s => ({
+              teamA: s.team_a_players,
+              teamB: s.team_b_players,
+              teamAScore: parseFloat(s.team_a_score),
+              teamBScore: parseFloat(s.team_b_score),
+              completed_at: s.completed_at,
+              table_number: s.table_number
+            })) || [];
+          } catch (err) {
+            console.error('Error:', err);
+            return [];
+          }
+        };
+
         // Calculate totals
         const totA = hands.reduce((sum, h) => sum + h.scoreA, 0);
         const totB = hands.reduce((sum, h) => sum + h.scoreB, 0);
@@ -1236,14 +1288,8 @@
                   
                   {(() => {
                     // Filter sets by date range (use allSets to show all historical data)
-                    const filteredSets = allSets.filter(set => {
-                      if (!set.completed_at) return true;
-                      const setDate = new Date(set.completed_at);
-                      // Parse dates as local time by adding time component
-                      const startDate = new Date(leaderboardStartDate + 'T00:00:00');
-                      const endDate = new Date(leaderboardEndDate + 'T23:59:59');
-                      return setDate >= startDate && setDate <= endDate;
-                    });
+                    // Use pre-fetched leaderboard sets (already filtered by date in database query)
+                    const filteredSets = leaderboardSets;
 
                     if (filteredSets.length === 0) {
                       return (
@@ -1385,13 +1431,8 @@
                       <tbody>
                         {(() => {
                           // Filter sets by date range
-                          const filteredSets = allSets.filter(set => {
-                            if (!set.completed_at) return true;
-                            const setDate = new Date(set.completed_at);
-                            const startDate = new Date(statsStartDate + 'T00:00:00');
-                            const endDate = new Date(statsEndDate + 'T23:59:59');
-                            return setDate >= startDate && setDate <= endDate;
-                          });
+                          // Use pre-fetched stats sets (already filtered by date in database query)
+                          const filteredSets = statsSets;
 
                           if (filteredSets.length === 0) {
                             return (
