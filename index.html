@@ -172,8 +172,42 @@
         useEffect(() => {
           // Fetch leaderboard data when dates change
           const fetchLeaderboardData = async () => {
-            const sets = await fetchAllSetsForDateRange(leaderboardStartDate, leaderboardEndDate);
-            setLeaderboardSets(sets);
+            try {
+              console.log('Fetching leaderboard data for:', leaderboardStartDate, 'to', leaderboardEndDate);
+              const start = new Date(leaderboardStartDate + 'T00:00:00').toISOString();
+              const end = new Date(leaderboardEndDate + 'T23:59:59').toISOString();
+              console.log('ISO dates:', start, 'to', end);
+              
+              const { data: sets, error } = await supabaseClient
+                .from('sets')
+                .select('*')
+                .gte('completed_at', start)
+                .lte('completed_at', end)
+                .order('completed_at', { ascending: false });
+
+              if (error) {
+                console.error('Error fetching leaderboard sets:', error);
+                setLeaderboardSets([]);
+                return;
+              }
+
+              console.log('Fetched sets count:', sets?.length || 0, 'sets:', sets);
+
+              const mapped = sets?.map(s => ({
+                teamA: s.team_a_players,
+                teamB: s.team_b_players,
+                teamAScore: parseFloat(s.team_a_score),
+                teamBScore: parseFloat(s.team_b_score),
+                completed_at: s.completed_at,
+                table_number: s.table_number
+              })) || [];
+              
+              console.log('Setting leaderboardSets to:', mapped);
+              setLeaderboardSets(mapped);
+            } catch (err) {
+              console.error('Error:', err);
+              setLeaderboardSets([]);
+            }
           };
           fetchLeaderboardData();
         }, [leaderboardStartDate, leaderboardEndDate]);
@@ -181,8 +215,37 @@
         useEffect(() => {
           // Fetch stats data when dates change
           const fetchStatsData = async () => {
-            const sets = await fetchAllSetsForDateRange(statsStartDate, statsEndDate);
-            setStatsSets(sets);
+            try {
+              const start = new Date(statsStartDate + 'T00:00:00').toISOString();
+              const end = new Date(statsEndDate + 'T23:59:59').toISOString();
+              
+              const { data: sets, error } = await supabaseClient
+                .from('sets')
+                .select('*')
+                .gte('completed_at', start)
+                .lte('completed_at', end)
+                .order('completed_at', { ascending: false });
+
+              if (error) {
+                console.error('Error fetching stats sets:', error);
+                setStatsSets([]);
+                return;
+              }
+
+              const mapped = sets?.map(s => ({
+                teamA: s.team_a_players,
+                teamB: s.team_b_players,
+                teamAScore: parseFloat(s.team_a_score),
+                teamBScore: parseFloat(s.team_b_score),
+                completed_at: s.completed_at,
+                table_number: s.table_number
+              })) || [];
+              
+              setStatsSets(mapped);
+            } catch (err) {
+              console.error('Error:', err);
+              setStatsSets([]);
+            }
           };
           fetchStatsData();
         }, [statsStartDate, statsEndDate]);
@@ -773,9 +836,9 @@
         };
 
         const endSet = async () => {
-          // Check if we have 3 completed games
-          if (currentSetGames.length < 3) {
-            showToast('Cannot end set - need 3 completed games');
+          // Can end set with 1, 2, or 3 games
+          if (currentSetGames.length === 0) {
+            showToast('Cannot end set - no games played');
             setShowEndSetModal(false);
             return;
           }
@@ -790,15 +853,17 @@
           const aWins = currentSetGames.filter(g => g.winner === 'A').length;
           const bWins = currentSetGames.filter(g => g.winner === 'B').length;
 
-          // Add $25 bonus if one team won all 3 games
-          if (aWins === 3) {
-            stA += stakes.bonus;
-            stB -= stakes.bonus;
-            showToast(`Team A wins all 3! +$${stakes.bonus} bonus`);
-          } else if (bWins === 3) {
-            stB += stakes.bonus;
-            stA -= stakes.bonus;
-            showToast(`Team B wins all 3! +$${stakes.bonus} bonus`);
+          // Add $25 bonus ONLY if 3 games played and one team won all 3
+          if (currentSetGames.length === 3) {
+            if (aWins === 3) {
+              stA += stakes.bonus;
+              stB -= stakes.bonus;
+              showToast(`Team A wins all 3! +$${stakes.bonus} bonus`);
+            } else if (bWins === 3) {
+              stB += stakes.bonus;
+              stA -= stakes.bonus;
+              showToast(`Team B wins all 3! +$${stakes.bonus} bonus`);
+            }
           }
 
           // Save set to database
@@ -825,7 +890,7 @@
           // Reset for new set
           setCurrentSetGames([]);
           setShowEndSetModal(false);
-          showToast(`Set complete! Starting new set...`);
+          showToast(`Set complete with ${currentSetGames.length} game(s)! Starting new set...`);
         };
 
         // Fetch all sets for date range (for Stats/Leaderboard tabs)
@@ -964,12 +1029,12 @@
                       onClick={() => setShowEndSetModal(true)} 
                       style={{
                         ...buttonStyle('#f59e0b'),
-                        opacity: currentSetGames.length === 3 ? 1 : 0.5,
-                        cursor: currentSetGames.length === 3 ? 'pointer' : 'not-allowed'
+                        opacity: currentSetGames.length > 0 ? 1 : 0.5,
+                        cursor: currentSetGames.length > 0 ? 'pointer' : 'not-allowed'
                       }}
-                      disabled={currentSetGames.length !== 3}
+                      disabled={currentSetGames.length === 0}
                     >
-                      End Set {currentSetGames.length === 3 ? '✓' : `(${currentSetGames.length}/3)`}
+                      End Set {currentSetGames.length > 0 ? `(${currentSetGames.length})` : '(0/3)'}
                     </button>
                     <button onClick={() => setShowEndSessionModal(true)} style={buttonStyle('#8b5cf6')}>End Session</button>
                   </div>
@@ -1290,6 +1355,7 @@
                     // Filter sets by date range (use allSets to show all historical data)
                     // Use pre-fetched leaderboard sets (already filtered by date in database query)
                     const filteredSets = leaderboardSets;
+                    console.log('Leaderboard rendering with', filteredSets.length, 'sets');
 
                     if (filteredSets.length === 0) {
                       return (
@@ -1689,8 +1755,8 @@
               </p>
               <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
                 <p style={{ color: '#1e293b', marginBottom: '0.5rem' }}><strong>Current Set:</strong></p>
-                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Games completed: <strong>{currentSetGames.length}/3</strong></p>
-                {currentSetGames.length === 3 && (() => {
+                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Games completed: <strong>{currentSetGames.length}</strong></p>
+                {currentSetGames.length > 0 && (() => {
                   const aWins = currentSetGames.filter(g => g.winner === 'A').length;
                   const bWins = currentSetGames.filter(g => g.winner === 'B').length;
                   let stA = 0, stB = 0;
@@ -1698,7 +1764,7 @@
                     stA += game.scoreA;
                     stB += game.scoreB;
                   });
-                  const willGetBonus = aWins === 3 || bWins === 3;
+                  const willGetBonus = currentSetGames.length === 3 && (aWins === 3 || bWins === 3);
                   return (
                     <>
                       <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Team A wins: <strong>{aWins}</strong> | Team B wins: <strong>{bWins}</strong></p>
