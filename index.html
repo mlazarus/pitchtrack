@@ -147,6 +147,7 @@
         const [showDealerModal, setShowDealerModal] = useState(false);
         const [showEndGameModal, setShowEndGameModal] = useState(false);
         const [showEndSessionModal, setShowEndSessionModal] = useState(false);
+        const [showEndSetModal, setShowEndSetModal] = useState(false);
         const [scoreA, setScoreA] = useState('');
         const [scoreB, setScoreB] = useState('');
         const [tempDealers, setTempDealers] = useState([]);
@@ -559,6 +560,55 @@
           setCurrentSetGames(newSetGames);
           showToast(`Game ${gameNumber} done! ${winner} wins $${Math.abs(winner === 'A' ? f.scoreA : f.scoreB).toFixed(1)}`);
 
+          // Check for set split after Game 3
+          if (newSetGames.length === 3) {
+            const aWins = newSetGames.filter(g => g.winner === 'A').length;
+            const bWins = newSetGames.filter(g => g.winner === 'B').length;
+            
+            // Check if one team won first 2 games and other team won game 3
+            const aWonFirst2 = newSetGames[0].winner === 'A' && newSetGames[1].winner === 'A';
+            const bWonFirst2 = newSetGames[0].winner === 'B' && newSetGames[1].winner === 'B';
+            const game3Winner = newSetGames[2].winner;
+            
+            if ((aWonFirst2 && game3Winner === 'B') || (bWonFirst2 && game3Winner === 'A')) {
+              // SPLIT: Games 1&2 become complete set, Game 3 becomes new set's Game 1
+              let stA = 0, stB = 0;
+              // Only sum first 2 games for the completed set
+              newSetGames.slice(0, 2).forEach(game => {
+                stA += game.scoreA;
+                stB += game.scoreB;
+              });
+
+              // NO $25 bonus for 2-0 when split happens
+              
+              await supabaseClient.from('sets').insert({
+                team_a_players: teamA,
+                team_b_players: teamB,
+                team_a_score: stA,
+                team_b_score: stB,
+                table_number: currentTable,
+                completed_at: new Date().toISOString()
+              });
+
+              const newSet = {
+                teamA: [...teamA],
+                teamB: [...teamB],
+                teamAScore: stA,
+                teamBScore: stB,
+                completed_at: new Date().toISOString()
+              };
+              
+              setSetHistory([newSet, ...setHistory]);
+              setAllSets([newSet, ...allSets]);
+              showToast(`Set split! Games 1-2 complete. Game 3 becomes new set Game 1.`);
+              
+              // Game 3 becomes Game 1 of new set
+              setCurrentSetGames([newSetGames[2]]);
+              setShowEndGameModal(false);
+              return;
+            }
+          }
+
           if (newSetGames.length === 3) {
             let stA = 0, stB = 0;
             newSetGames.forEach(game => {
@@ -702,6 +752,62 @@
           }
         };
 
+        const endSet = async () => {
+          // Check if we have 3 completed games
+          if (currentSetGames.length < 3) {
+            showToast('Cannot end set - need 3 completed games');
+            setShowEndSetModal(false);
+            return;
+          }
+
+          // Calculate final scores
+          let stA = 0, stB = 0;
+          currentSetGames.forEach(game => {
+            stA += game.scoreA;
+            stB += game.scoreB;
+          });
+
+          const aWins = currentSetGames.filter(g => g.winner === 'A').length;
+          const bWins = currentSetGames.filter(g => g.winner === 'B').length;
+
+          // Add $25 bonus if one team won all 3 games
+          if (aWins === 3) {
+            stA += stakes.bonus;
+            stB -= stakes.bonus;
+            showToast(`Team A wins all 3! +$${stakes.bonus} bonus`);
+          } else if (bWins === 3) {
+            stB += stakes.bonus;
+            stA -= stakes.bonus;
+            showToast(`Team B wins all 3! +$${stakes.bonus} bonus`);
+          }
+
+          // Save set to database
+          await supabaseClient.from('sets').insert({
+            team_a_players: teamA,
+            team_b_players: teamB,
+            team_a_score: stA,
+            team_b_score: stB,
+            table_number: currentTable,
+            completed_at: new Date().toISOString()
+          });
+
+          const newSet = {
+            teamA: [...teamA],
+            teamB: [...teamB],
+            teamAScore: stA,
+            teamBScore: stB,
+            completed_at: new Date().toISOString()
+          };
+          
+          setSetHistory([newSet, ...setHistory]);
+          setAllSets([newSet, ...allSets]);
+          
+          // Reset for new set
+          setCurrentSetGames([]);
+          setShowEndSetModal(false);
+          showToast(`Set complete! Starting new set...`);
+        };
+
         // Calculate totals
         const totA = hands.reduce((sum, h) => sum + h.scoreA, 0);
         const totB = hands.reduce((sum, h) => sum + h.scoreB, 0);
@@ -802,6 +908,17 @@
                     <button onClick={openScoreModal} style={buttonStyle('#6366f1')}>Add Score</button>
                     <button onClick={openDealerModal} style={buttonStyle('#10b981')}>Select Dealers</button>
                     <button onClick={openEndGameModal} style={buttonStyle('#ef4444')}>End Game</button>
+                    <button 
+                      onClick={() => setShowEndSetModal(true)} 
+                      style={{
+                        ...buttonStyle('#f59e0b'),
+                        opacity: currentSetGames.length === 3 ? 1 : 0.5,
+                        cursor: currentSetGames.length === 3 ? 'pointer' : 'not-allowed'
+                      }}
+                      disabled={currentSetGames.length !== 3}
+                    >
+                      End Set {currentSetGames.length === 3 ? '✓' : `(${currentSetGames.length}/3)`}
+                    </button>
                     <button onClick={() => setShowEndSessionModal(true)} style={buttonStyle('#8b5cf6')}>End Session</button>
                   </div>
 
@@ -1519,6 +1636,53 @@
                   Team B Wins {wB.runningB < 9 ? '(Need 9+)' : ''}
                 </button>
                 <button onClick={() => setShowEndGameModal(false)} style={{ ...buttonStyle('#64748b'), padding: '1rem' }}>Cancel</button>
+              </div>
+            </Modal>
+
+            {/* End Set Modal */}
+            <Modal show={showEndSetModal} onClose={() => setShowEndSetModal(false)}>
+              <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: '700', color: '#1e293b' }}>End Set</h2>
+              <p style={{ color: '#64748b', marginBottom: '1rem' }}>
+                Complete this set and start a new one?
+              </p>
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                <p style={{ color: '#1e293b', marginBottom: '0.5rem' }}><strong>Current Set:</strong></p>
+                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Games completed: <strong>{currentSetGames.length}/3</strong></p>
+                {currentSetGames.length === 3 && (() => {
+                  const aWins = currentSetGames.filter(g => g.winner === 'A').length;
+                  const bWins = currentSetGames.filter(g => g.winner === 'B').length;
+                  let stA = 0, stB = 0;
+                  currentSetGames.forEach(game => {
+                    stA += game.scoreA;
+                    stB += game.scoreB;
+                  });
+                  const willGetBonus = aWins === 3 || bWins === 3;
+                  return (
+                    <>
+                      <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Team A wins: <strong>{aWins}</strong> | Team B wins: <strong>{bWins}</strong></p>
+                      <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Current total: Team A <strong>${stA.toFixed(1)}</strong> | Team B <strong>${stB.toFixed(1)}</strong></p>
+                      {willGetBonus && (
+                        <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                          ⭐ <strong>{aWins === 3 ? 'Team A' : 'Team B'} wins all 3 games! +${stakes.bonus} bonus</strong>
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  onClick={endSet}
+                  style={{ ...buttonStyle('#f59e0b'), padding: '1rem', flex: 1 }}
+                >
+                  🏁 End Set & Start New
+                </button>
+                <button 
+                  onClick={() => setShowEndSetModal(false)}
+                  style={{ ...buttonStyle('#64748b'), padding: '1rem' }}
+                >
+                  Cancel
+                </button>
               </div>
             </Modal>
 
