@@ -127,8 +127,10 @@
         const [gameNumber, setGameNumber] = useState(1);
         const [currentGameId, setCurrentGameId] = useState(null);
         const [completedGames, setCompletedGames] = useState([]);
-        const [setHistory, setSetHistory] = useState([]);
+        const [setHistory, setSetHistory] = useState([]); // Filtered by session for Game tab
+        const [allSets, setAllSets] = useState([]); // Unfiltered for Stats/Leaderboard tabs
         const [currentSetGames, setCurrentSetGames] = useState([]);
+        const [sessionEndedAt, setSessionEndedAt] = useState(null);
         const [stakes, setStakes] = useState({ gameScore: 4, bump: 2, points: 1, bonus: 25, tableFontSize: 0.9 });
         const [activeTab, setActiveTab] = useState('game');
         
@@ -267,13 +269,30 @@
               .select('*')
               .eq('table_number', currentTable)
               .order('completed_at', { ascending: false });
-            setSetHistory(sets?.map(s => ({
+            
+            const mappedSets = sets?.map(s => ({
               teamA: s.team_a_players,
               teamB: s.team_b_players,
               teamAScore: parseFloat(s.team_a_score),
               teamBScore: parseFloat(s.team_b_score),
               completed_at: s.completed_at
-            })) || []);
+            })) || [];
+            
+            // Store all sets for Stats/Leaderboard tabs
+            setAllSets(mappedSets);
+            
+            // Get sessionEndedAt from localStorage
+            const storedSessionEnd = localStorage.getItem(`sessionEnd_table${currentTable}`);
+            const sessionEnd = storedSessionEnd ? new Date(storedSessionEnd) : null;
+            
+            // Filter for Game tab view (only sets after session was ended)
+            const filteredSets = mappedSets.filter(s => {
+              if (!sessionEnd) return true; // No session end, show all
+              const setDate = new Date(s.completed_at);
+              return setDate > sessionEnd; // Only show sets after session was ended
+            });
+            
+            setSetHistory(filteredSets);
           } catch (error) {
             console.error('Error loading data:', error);
           }
@@ -569,13 +588,16 @@
               completed_at: new Date().toISOString()
             });
 
-            setSetHistory([{
+            const newSet = {
               teamA: [...teamA],
               teamB: [...teamB],
               teamAScore: stA,
               teamBScore: stB,
               completed_at: new Date().toISOString()
-            }, ...setHistory]);
+            };
+            
+            setSetHistory([newSet, ...setHistory]);
+            setAllSets([newSet, ...allSets]);
             showToast(`Set done! ${stA > stB ? 'A' : 'B'} wins!`);
             setCurrentSetGames([]);
           }
@@ -634,6 +656,11 @@
 
         const endSessionSave = () => {
           // Keep sets in database, just reset the view
+          // Save timestamp to localStorage so it persists across page refreshes
+          const now = new Date().toISOString();
+          localStorage.setItem(`sessionEnd_table${currentTable}`, now);
+          setSessionEndedAt(now);
+          
           // Clear all session-related state
           setSetHistory([]);
           setCurrentSetGames([]);
@@ -663,6 +690,9 @@
 
             setSetHistory([]);
             setCurrentSetGames([]);
+            // Also clear the session end marker since we're deleting everything
+            localStorage.removeItem(`sessionEnd_table${currentTable}`);
+            setSessionEndedAt(null);
             setShowEndSessionModal(false);
             setTimeout(() => {
               showToast('All sets discarded and deleted from database');
@@ -1088,8 +1118,8 @@
                   </div>
                   
                   {(() => {
-                    // Filter sets by date range
-                    const filteredSets = setHistory.filter(set => {
+                    // Filter sets by date range (use allSets to show all historical data)
+                    const filteredSets = allSets.filter(set => {
                       if (!set.completed_at) return true;
                       const setDate = new Date(set.completed_at);
                       const startDate = new Date(leaderboardStartDate);
@@ -1237,7 +1267,7 @@
                       <tbody>
                         {(() => {
                           // Filter sets by date range
-                          const filteredSets = setHistory.filter(set => {
+                          const filteredSets = allSets.filter(set => {
                             if (!set.completed_at) return true;
                             const setDate = new Date(set.completed_at);
                             const startDate = new Date(statsStartDate);
