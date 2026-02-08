@@ -643,20 +643,56 @@
           setCurrentSetGames(newSetGames);
           showToast(`Game ${gameNumber} done! ${winner} wins $${Math.abs(winner === 'A' ? f.scoreA : f.scoreB).toFixed(1)}`);
 
-          // Check for set split after Game 3
-          if (newSetGames.length === 3) {
-            const aWins = newSetGames.filter(g => g.winner === 'A').length;
-            const bWins = newSetGames.filter(g => g.winner === 'B').length;
+          // Check for set split after Game 2 (if different winner than Game 1)
+          if (newSetGames.length === 2) {
+            const game1Winner = newSetGames[0].winner;
+            const game2Winner = newSetGames[1].winner;
             
-            // Check if one team won first 2 games and other team won game 3
-            const aWonFirst2 = newSetGames[0].winner === 'A' && newSetGames[1].winner === 'A';
-            const bWonFirst2 = newSetGames[0].winner === 'B' && newSetGames[1].winner === 'B';
+            // If Game 2 winner is DIFFERENT from Game 1 winner, split the set
+            if (game1Winner !== game2Winner) {
+              // SPLIT: Game 1 becomes complete set, Game 2 becomes new set's Game 1
+              const game1 = newSetGames[0];
+              
+              // Save Game 1 as completed set
+              await supabaseClient.from('sets').insert({
+                team_a_players: teamA,
+                team_b_players: teamB,
+                team_a_score: game1.scoreA,
+                team_b_score: game1.scoreB,
+                table_number: currentTable,
+                completed_at: new Date().toISOString()
+              });
+
+              const completedSet = {
+                teamA: [...teamA],
+                teamB: [...teamB],
+                teamAScore: game1.scoreA,
+                teamBScore: game1.scoreB,
+                completed_at: new Date().toISOString()
+              };
+              
+              setSetHistory([completedSet, ...setHistory]);
+              setAllSets([completedSet, ...allSets]);
+              showToast(`Set complete! Game 1 closed. Game 2 becomes new set Game 1.`);
+              
+              // Game 2 becomes Game 1 of new set
+              setCurrentSetGames([newSetGames[1]]);
+              setShowEndGameModal(false);
+              return;
+            }
+          }
+
+          // Check for set split after Game 3 (if Game 1&2 same winner, Game 3 different)
+          if (newSetGames.length === 3) {
+            const game1Winner = newSetGames[0].winner;
+            const game2Winner = newSetGames[1].winner;
             const game3Winner = newSetGames[2].winner;
             
-            if ((aWonFirst2 && game3Winner === 'B') || (bWonFirst2 && game3Winner === 'A')) {
+            // If Games 1&2 won by same team, but Game 3 won by other team, split
+            if (game1Winner === game2Winner && game3Winner !== game1Winner) {
               // SPLIT: Games 1&2 become complete set, Game 3 becomes new set's Game 1
               let stA = 0, stB = 0;
-              // Only sum first 2 games for the completed set
+              // Sum first 2 games for the completed set
               newSetGames.slice(0, 2).forEach(game => {
                 stA += game.scoreA;
                 stB += game.scoreB;
@@ -673,7 +709,7 @@
                 completed_at: new Date().toISOString()
               });
 
-              const newSet = {
+              const completedSet = {
                 teamA: [...teamA],
                 teamB: [...teamB],
                 teamAScore: stA,
@@ -681,9 +717,9 @@
                 completed_at: new Date().toISOString()
               };
               
-              setSetHistory([newSet, ...setHistory]);
-              setAllSets([newSet, ...allSets]);
-              showToast(`Set split! Games 1-2 complete. Game 3 becomes new set Game 1.`);
+              setSetHistory([completedSet, ...setHistory]);
+              setAllSets([completedSet, ...allSets]);
+              showToast(`Set complete! Games 1-2 closed. Game 3 becomes new set Game 1.`);
               
               // Game 3 becomes Game 1 of new set
               setCurrentSetGames([newSetGames[2]]);
@@ -692,6 +728,7 @@
             }
           }
 
+          // Check for 3-game set completion (no split occurred)
           if (newSetGames.length === 3) {
             let stA = 0, stB = 0;
             newSetGames.forEach(game => {
@@ -702,6 +739,7 @@
             const aWins = newSetGames.filter(g => g.winner === 'A').length;
             const bWins = newSetGames.filter(g => g.winner === 'B').length;
 
+            // Add $25 bonus if one team won all 3 games
             if (aWins === 3) {
               stA += stakes.bonus;
               stB -= stakes.bonus;
@@ -1356,6 +1394,7 @@
                     // Use pre-fetched leaderboard sets (already filtered by date in database query)
                     const filteredSets = leaderboardSets;
                     console.log('Leaderboard rendering with', filteredSets.length, 'sets');
+                    console.log('Sample set:', filteredSets[0]);
 
                     if (filteredSets.length === 0) {
                       return (
@@ -1370,6 +1409,7 @@
                     const playerStats = {};
 
                     filteredSets.forEach(set => {
+                      console.log('Processing set:', set);
                       const aMult = set.teamA.length < set.teamB.length ? 1.5 : 1;
                       const bMult = set.teamB.length < set.teamA.length ? 1.5 : 1;
 
@@ -1396,9 +1436,13 @@
                       });
                     });
 
+                    console.log('Player stats:', playerStats);
+
                     const sortedPlayers = Object.keys(playerStats).sort((a, b) => 
                       playerStats[b].totalEarnings - playerStats[a].totalEarnings
                     );
+
+                    console.log('Sorted players:', sortedPlayers);
 
                     return (
                       <div>
@@ -1601,11 +1645,11 @@
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                       <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                      <span>2.1.0 (React)</span>
+                      <span>2.2.0 (React)</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                       <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
-                      <span>Feb 3, 2026</span>
+                      <span>Feb 8, 2026</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0' }}>
                       <span style={{ fontWeight: '600', color: '#94a3b8' }}>Description</span>
