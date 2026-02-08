@@ -652,6 +652,7 @@
             if (game1Winner !== game2Winner) {
               // SPLIT: Game 1 becomes complete set, Game 2 becomes new set's Game 1
               const game1 = newSetGames[0];
+              const game2 = newSetGames[1]; // Save Game 2 data before clearing
               
               // Save Game 1 as completed set
               await supabaseClient.from('sets').insert({
@@ -673,10 +674,50 @@
               
               setSetHistory([completedSet, ...setHistory]);
               setAllSets([completedSet, ...allSets]);
-              showToast(`Set complete! Game 1 closed. Game 2 becomes new set Game 1.`);
               
-              // Game 2 becomes Game 1 of new set
-              setCurrentSetGames([newSetGames[1]]);
+              // Delete current game from database (will be recreated)
+              if (currentGameId) {
+                await supabaseClient.from('games').delete().eq('id', currentGameId);
+              }
+              
+              // Create new Game 1 with Game 2's data
+              const { data: newGame } = await supabaseClient.from('games').insert({
+                game_number: 1, // This is now Game 1 of new set
+                team_a_players: teamA,
+                team_b_players: teamB,
+                winner: game2.winner,
+                score_a: game2.scoreA,
+                score_b: game2.scoreB,
+                running_a: game2.scoreA,
+                running_b: game2.scoreB,
+                bumps_a: 0,
+                bumps_b: 0,
+                hands_played: game2.hands?.length || 0,
+                table_number: currentTable,
+                completed_at: new Date().toISOString()
+              }).select().single();
+              
+              // Save Game 2's hands to new game
+              if (game2.hands && game2.hands.length > 0) {
+                const handsToInsert = game2.hands.map((hand, idx) => ({
+                  game_id: newGame.id,
+                  dealer: hand.dealer,
+                  score_a: hand.scoreA,
+                  score_b: hand.scoreB,
+                  hand_order: idx + 1
+                }));
+                await supabaseClient.from('hands').insert(handsToInsert);
+              }
+              
+              // Update state
+              setCurrentGameId(newGame.id);
+              setGameNumber(1);
+              setScoreA(game2.scoreA);
+              setScoreB(game2.scoreB);
+              setCurrentHands(game2.hands || []);
+              setCurrentSetGames([game2]); // Game 2 becomes Game 1 of new set
+              
+              showToast(`Set complete! Game 1 closed. Game 2 becomes new set Game 1.`);
               setShowEndGameModal(false);
               return;
             }
@@ -691,6 +732,8 @@
             // If Games 1&2 won by same team, but Game 3 won by other team, split
             if (game1Winner === game2Winner && game3Winner !== game1Winner) {
               // SPLIT: Games 1&2 become complete set, Game 3 becomes new set's Game 1
+              const game3 = newSetGames[2]; // Save Game 3 data before clearing
+              
               let stA = 0, stB = 0;
               // Sum first 2 games for the completed set
               newSetGames.slice(0, 2).forEach(game => {
@@ -719,10 +762,50 @@
               
               setSetHistory([completedSet, ...setHistory]);
               setAllSets([completedSet, ...allSets]);
-              showToast(`Set complete! Games 1-2 closed. Game 3 becomes new set Game 1.`);
               
-              // Game 3 becomes Game 1 of new set
-              setCurrentSetGames([newSetGames[2]]);
+              // Delete current game from database (will be recreated)
+              if (currentGameId) {
+                await supabaseClient.from('games').delete().eq('id', currentGameId);
+              }
+              
+              // Create new Game 1 with Game 3's data
+              const { data: newGame } = await supabaseClient.from('games').insert({
+                game_number: 1, // This is now Game 1 of new set
+                team_a_players: teamA,
+                team_b_players: teamB,
+                winner: game3.winner,
+                score_a: game3.scoreA,
+                score_b: game3.scoreB,
+                running_a: game3.scoreA,
+                running_b: game3.scoreB,
+                bumps_a: 0,
+                bumps_b: 0,
+                hands_played: game3.hands?.length || 0,
+                table_number: currentTable,
+                completed_at: new Date().toISOString()
+              }).select().single();
+              
+              // Save Game 3's hands to new game
+              if (game3.hands && game3.hands.length > 0) {
+                const handsToInsert = game3.hands.map((hand, idx) => ({
+                  game_id: newGame.id,
+                  dealer: hand.dealer,
+                  score_a: hand.scoreA,
+                  score_b: hand.scoreB,
+                  hand_order: idx + 1
+                }));
+                await supabaseClient.from('hands').insert(handsToInsert);
+              }
+              
+              // Update state
+              setCurrentGameId(newGame.id);
+              setGameNumber(1);
+              setScoreA(game3.scoreA);
+              setScoreB(game3.scoreB);
+              setCurrentHands(game3.hands || []);
+              setCurrentSetGames([game3]); // Game 3 becomes Game 1 of new set
+              
+              showToast(`Set complete! Games 1-2 closed. Game 3 becomes new set Game 1.`);
               setShowEndGameModal(false);
               return;
             }
