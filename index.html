@@ -635,7 +635,8 @@
             scoreB: f.scoreB,
             handsPlayed: hands.length,
             teamA: [...teamA],
-            teamB: [...teamB]
+            teamB: [...teamB],
+            hands: [...hands] // Include hands so we can reference them during split
           };
 
           setCompletedGames([gr, ...completedGames]);
@@ -709,13 +710,22 @@
                 await supabaseClient.from('hands').insert(handsToInsert);
               }
               
-              // Update state
+              // Update state - Game 2 stays completed, just becomes Game 1
               setCurrentGameId(newGame.id);
               setGameNumber(1);
               setScoreA(game2.scoreA);
               setScoreB(game2.scoreB);
-              setCurrentHands(game2.hands || []);
-              setCurrentSetGames([game2]); // Game 2 becomes Game 1 of new set
+              setHands(game2.hands || []); // Set hands to game2's hands
+              setCurrentSetGames([{
+                gameNumber: 1,
+                winner: game2.winner,
+                scoreA: game2.scoreA,
+                scoreB: game2.scoreB,
+                handsPlayed: game2.hands?.length || 0,
+                teamA: [...teamA],
+                teamB: [...teamB],
+                hands: game2.hands || []
+              }]); // Game 2 becomes Game 1 of new set (already completed)
               
               showToast(`Set complete! Game 1 closed. Game 2 becomes new set Game 1.`);
               setShowEndGameModal(false);
@@ -797,13 +807,22 @@
                 await supabaseClient.from('hands').insert(handsToInsert);
               }
               
-              // Update state
+              // Update state - Game 3 stays completed, just becomes Game 1
               setCurrentGameId(newGame.id);
               setGameNumber(1);
               setScoreA(game3.scoreA);
               setScoreB(game3.scoreB);
-              setCurrentHands(game3.hands || []);
-              setCurrentSetGames([game3]); // Game 3 becomes Game 1 of new set
+              setHands(game3.hands || []); // Set hands to game3's hands
+              setCurrentSetGames([{
+                gameNumber: 1,
+                winner: game3.winner,
+                scoreA: game3.scoreA,
+                scoreB: game3.scoreB,
+                handsPlayed: game3.hands?.length || 0,
+                teamA: [...teamA],
+                teamB: [...teamB],
+                hands: game3.hands || []
+              }]); // Game 3 becomes Game 1 of new set (already completed)
               
               showToast(`Set complete! Games 1-2 closed. Game 3 becomes new set Game 1.`);
               setShowEndGameModal(false);
