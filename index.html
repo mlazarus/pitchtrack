@@ -503,6 +503,9 @@
             showToast('Score added!');
           }
 
+          setScoreA(''); // Clear for next hand
+          setScoreB(''); // Clear for next hand
+          setEditingHandIndex(null); // Clear editing state
           setShowScoreModal(false);
         };
 
@@ -876,6 +879,8 @@
           }
 
           setHands([]);
+          setScoreA(''); // Reset score inputs for next game
+          setScoreB(''); // Reset score inputs for next game
           const { data: lastGame } = await supabaseClient
             .from('games')
             .select('game_number')
