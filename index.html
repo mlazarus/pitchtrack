@@ -705,12 +705,9 @@
             console.log(`✅ Inserted ${handsToInsert.length} hands for new Game 1`);
           }
           
-          // Update state - Game 2 stays completed, just becomes Game 1
+          // Update state - Game 2 is now completed Game 1
           setCurrentGameId(newGame.id);
           setGameNumber(1);
-          setScoreA(''); // Clear inputs
-          setScoreB(''); // Clear inputs
-          setHands(game2.hands || []);
           setCurrentSetGames([{
             gameNumber: 1,
             winner: game2.winner,
@@ -722,8 +719,11 @@
             hands: game2.hands || []
           }]);
           
-          showToast(`Set complete! Game 1 closed. Game 2 becomes new set Game 1.`);
-          console.log(`🎯 State updated: currentSetGames has 1 game (the new Game 1)`);
+          showToast(`Set complete! Game 1 closed. Starting Game 2...`);
+          console.log(`🎯 State updated: Game 1 complete, now starting fresh Game 2`);
+          
+          // Game 1 is complete, now start fresh Game 2
+          await startNewGame();
         };
 
         const handleSplitAtGame3 = async (game1, game2, game3) => {
@@ -793,12 +793,9 @@
             console.log(`✅ Inserted ${handsToInsert.length} hands for new Game 1`);
           }
           
-          // Update state - Game 3 stays completed, just becomes Game 1
+          // Update state - Game 3 is now completed Game 1
           setCurrentGameId(newGame.id);
           setGameNumber(1);
-          setScoreA(''); // Clear inputs
-          setScoreB(''); // Clear inputs
-          setHands(game3.hands || []);
           setCurrentSetGames([{
             gameNumber: 1,
             winner: game3.winner,
@@ -810,8 +807,11 @@
             hands: game3.hands || []
           }]);
           
-          showToast(`Set complete! Games 1-2 closed. Game 3 becomes new set Game 1.`);
-          console.log(`🎯 State updated: currentSetGames has 1 game (the new Game 1)`);
+          showToast(`Set complete! Games 1-2 closed. Starting Game 2...`);
+          console.log(`🎯 State updated: Game 1 complete, now starting fresh Game 2`);
+          
+          // Game 1 is complete, now start fresh Game 2
+          await startNewGame();
         };
 
         const openEndGameModal = () => {
