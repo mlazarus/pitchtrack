@@ -541,6 +541,28 @@
             
             showToast('Score added!');
             console.log('  ✅ Hands state update queued');
+            
+            // Reload hands from database to ensure we're in sync
+            console.log('  🔄 Reloading hands from database for game:', currentGameId);
+            const { data: reloadedHands, error: reloadError } = await supabaseClient
+              .from('hands')
+              .select('*')
+              .eq('game_id', currentGameId)
+              .order('hand_order');
+            
+            if (reloadError) {
+              console.error('  ❌ Error reloading hands:', reloadError);
+            } else if (reloadedHands) {
+              const mappedHands = reloadedHands.map(h => ({
+                dealer: h.dealer,
+                scoreA: parseFloat(h.score_a),
+                scoreB: parseFloat(h.score_b)
+              }));
+              console.log('  ✅ Reloaded', mappedHands.length, 'hands from database');
+              setHands(mappedHands);
+            } else {
+              console.log('  ⚠️ reloadedHands is null/undefined');
+            }
           }
 
           setScoreA(''); // Clear for next hand
