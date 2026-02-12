@@ -251,6 +251,7 @@
         }, [statsStartDate, statsEndDate]);
 
         const loadData = async () => {
+          console.log('📥 loadData called for table:', currentTable);
           try {
             // Load players
             const { data: playersData } = await supabaseClient
@@ -286,6 +287,7 @@
 
             if (currentGame && currentGame.length > 0) {
               const game = currentGame[0];
+              console.log('  ✅ Found existing game:', game.id, 'Game #' + game.game_number);
               setCurrentGameId(game.id);
               setGameNumber(game.game_number);
               setTeamA(game.team_a_players || []);
@@ -297,6 +299,7 @@
                 .select('*')
                 .eq('game_id', game.id)
                 .order('hand_order');
+              console.log('  ✅ Loaded', handsData?.length || 0, 'hands for game');
               setHands(handsData?.map(h => ({
                 dealer: h.dealer,
                 scoreA: parseFloat(h.score_a),
@@ -304,6 +307,7 @@
               })) || []);
             } else {
               // Create new game
+              console.log('  ⚠️ No in-progress game found, creating new one');
               const { data: lastGame } = await supabaseClient
                 .from('games')
                 .select('game_number')
@@ -443,6 +447,11 @@
         };
 
         const openScoreModal = () => {
+          console.log('🎯 openScoreModal called');
+          console.log('  - currentGameId:', currentGameId);
+          console.log('  - hands.length:', hands.length);
+          console.log('  - dealers:', dealers);
+          
           if (dealers.length === 0) {
             if (window.confirm('Dealers not set! Would you like to select dealers now?')) {
               setShowDealerModal(true);
@@ -453,6 +462,7 @@
           setScoreB('');
           setEditingHandIndex(null);
           setShowScoreModal(true);
+          console.log('  ✅ Score modal opened');
         };
 
         const editHand = (index) => {
@@ -520,9 +530,17 @@
             
             const newHand = { dealer, scoreA: sA, scoreB: sB };
             console.log('  - Setting hands state, new hand:', newHand);
-            setHands([...hands, newHand]);
+            console.log('  - Current hands before update:', hands);
+            
+            // Use functional update to avoid stale closure
+            setHands(prevHands => {
+              const updated = [...prevHands, newHand];
+              console.log('  - Functional update: prevHands.length =', prevHands.length, '→ updated.length =', updated.length);
+              return updated;
+            });
+            
             showToast('Score added!');
-            console.log('  ✅ Hands state updated, new length:', hands.length + 1);
+            console.log('  ✅ Hands state update queued');
           }
 
           setScoreA(''); // Clear for next hand
