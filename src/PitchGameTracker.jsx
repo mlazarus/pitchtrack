@@ -662,7 +662,10 @@ export default function PitchGameTracker() {
           hands: game2.hands || []
         }]); // Game 2 becomes Game 1 of new set (already completed)
         
-        showToast(`Set complete! Game 1 closed. Game 2 becomes new set Game 1.`);
+        showToast(`Set complete! Game 1 closed. Starting Game 2...`);
+        
+        // Game 1 is complete, now start fresh Game 2
+        await startNewGame();
         setShowEndGameModal(false);
         return;
       }
@@ -759,7 +762,10 @@ export default function PitchGameTracker() {
           hands: game3.hands || []
         }]); // Game 3 becomes Game 1 of new set (already completed)
         
-        showToast(`Set complete! Games 1-2 closed. Game 3 becomes new set Game 1.`);
+        showToast(`Set complete! Games 1-2 closed. Starting Game 2...`);
+        
+        // Game 1 is complete, now start fresh Game 2
+        await startNewGame();
         setShowEndGameModal(false);
         return;
       }
@@ -809,33 +815,9 @@ export default function PitchGameTracker() {
       setCurrentSetGames([]);
     }
 
-    setHands([]);
-    setScoreA(''); // Reset score inputs for next game
-    setScoreB(''); // Reset score inputs for next game
-    const { data: lastGame } = await supabase
-      .from('games')
-      .select('game_number')
-      .eq('table_number', currentTable)
-      .order('game_number', { ascending: false })
-      .limit(1);
-
-    const num = lastGame && lastGame.length > 0 ? lastGame[0].game_number + 1 : 1;
-    const { data: newGame } = await supabase
-      .from('games')
-      .insert({
-        game_number: num,
-        table_number: currentTable,
-        team_a_players: teamA,
-        team_b_players: teamB
-      })
-      .select()
-      .single();
-
-    if (newGame) {
-      setCurrentGameId(newGame.id);
-      setGameNumber(newGame.game_number);
-    }
-
+    // NO SPLIT OCCURRED - Start new game normally
+    console.log('🆕 No split, starting next game...');
+    await startNewGame();
     setShowEndGameModal(false);
   };
 
@@ -1648,7 +1630,7 @@ export default function PitchGameTracker() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                 <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                <span>2.2.2 (React)</span>
+                <span>2.2.3 (React)</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                 <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
