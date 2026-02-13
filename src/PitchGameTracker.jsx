@@ -891,6 +891,92 @@ export default function PitchGameTracker() {
     }
   };
 
+  const startNewGame = async () => {
+    console.log('🎮 Starting new game...');
+    
+    // Clear all game state
+    setHands([]);
+    setScoreA('');
+    setScoreB('');
+    setEditingHandIndex(null);
+    
+    // Get next game number
+    const { data: lastGame } = await supabase
+      .from('games')
+      .select('game_number')
+      .eq('table_number', currentTable)
+      .order('game_number', { ascending: false })
+      .limit(1);
+
+    const num = lastGame && lastGame.length > 0 ? lastGame[0].game_number + 1 : 1;
+    
+    // Create new game in database
+    const { data: newGame, error } = await supabase
+      .from('games')
+      .insert({
+        game_number: num,
+        table_number: currentTable,
+        team_a_players: teamA,
+        team_b_players: teamB
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating game:', error);
+      showToast('Error creating game: ' + error.message);
+      return;
+    }
+
+    if (newGame) {
+      setCurrentGameId(newGame.id);
+      setGameNumber(newGame.game_number);
+      console.log(`✅ New game created: Game #${newGame.game_number}, ID: ${newGame.id}`);
+    }
+  };
+
+  const wipeAllData = async () => {
+    if (!window.confirm('⚠️ WARNING: This will DELETE ALL DATA from the database (all tables, all games, all hands, all sets). This cannot be undone!\n\nAre you absolutely sure?')) {
+      return;
+    }
+    
+    if (!window.confirm('Final confirmation: Delete EVERYTHING from the database?')) {
+      return;
+    }
+
+    console.log('🗑️💥 WIPING ALL DATA FROM DATABASE');
+    try {
+      // Delete in order: hands → games → sets
+      await supabase.from('hands').delete().neq('id', 0);
+      console.log('✅ Deleted all hands');
+      
+      await supabase.from('games').delete().neq('id', 0);
+      console.log('✅ Deleted all games');
+      
+      await supabase.from('sets').delete().neq('id', 0);
+      console.log('✅ Deleted all sets');
+      
+      // Clear all localStorage
+      localStorage.clear();
+      console.log('✅ Cleared localStorage');
+      
+      // Reset all state
+      setSetHistory([]);
+      setCurrentSetGames([]);
+      setCompletedGames([]);
+      setSessionEndedAt(null);
+      
+      // Start completely fresh
+      await startNewGame();
+      
+      showToast('🗑️ ALL DATA WIPED - Database is empty, starting fresh');
+      console.log('✅ All data wiped, fresh game started');
+    } catch (err) {
+      console.error('❌ Error wiping data:', err);
+      showToast('Error wiping data: ' + err.message);
+    }
+  };
+
   const endSet = async () => {
     // Can end set with 1, 2, or 3 games
     if (currentSetGames.length === 0) {
@@ -1093,6 +1179,7 @@ export default function PitchGameTracker() {
                 End Set {currentSetGames.length > 0 ? `(${currentSetGames.length})` : '(0/3)'}
               </button>
               <button onClick={() => setShowEndSessionModal(true)} style={buttonStyle('#8b5cf6')}>End Session</button>
+              <button onClick={wipeAllData} style={{ ...buttonStyle('#dc2626'), fontSize: '0.875rem' }}>⚠️ Wipe All Data</button>
             </div>
 
             <h3 style={{ marginTop: '2rem', marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Scores</h3>
@@ -1541,11 +1628,11 @@ export default function PitchGameTracker() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                 <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                <span>2.2.0 (React)</span>
+                <span>2.2.1 (React)</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                 <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
-                <span>Feb 8, 2026</span>
+                <span>Feb 12, 2026</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0' }}>
                 <span style={{ fontWeight: '600', color: '#94a3b8' }}>Description</span>
