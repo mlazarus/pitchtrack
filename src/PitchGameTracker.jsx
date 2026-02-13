@@ -349,6 +349,12 @@ export default function PitchGameTracker() {
   };
 
   const confirmScore = async () => {
+    console.log('📝 confirmScore called');
+    console.log('  - currentGameId:', currentGameId);
+    console.log('  - dealers:', dealers);
+    console.log('  - hands.length:', hands.length);
+    console.log('  - scoreA:', scoreA, 'scoreB:', scoreB);
+    
     const sA = scoreA.trim() === '' ? 0 : parseFloat(scoreA);
     const sB = scoreB.trim() === '' ? 0 : parseFloat(scoreB);
 
@@ -364,6 +370,7 @@ export default function PitchGameTracker() {
 
     if (editingHandIndex !== null) {
       // Edit existing hand
+      console.log('  - Editing hand at index:', editingHandIndex);
       await supabase
         .from('hands')
         .update({ score_a: sA, score_b: sB })
@@ -374,9 +381,12 @@ export default function PitchGameTracker() {
       newHands[editingHandIndex] = { ...newHands[editingHandIndex], scoreA: sA, scoreB: sB };
       setHands(newHands);
       showToast('Hand updated');
+      console.log('  ✅ Hand updated');
     } else {
       // Add new hand
       const dealer = dealers[hands.length % dealers.length];
+      console.log('  - Adding new hand, dealer:', dealer);
+      console.log('  - Inserting to database...');
       
       const { data, error } = await supabase.from('hands').insert({
         game_id: currentGameId,
@@ -387,16 +397,22 @@ export default function PitchGameTracker() {
       }).select();
       
       if (error) {
-        console.error('Error saving hand:', error);
+        console.error('  ❌ Error saving hand:', error);
         showToast('Error saving hand: ' + error.message);
         return;
       }
 
+      console.log('  ✅ Hand saved to database:', data);
+
       // Use functional update to avoid stale closure
-      setHands(prevHands => [...prevHands, { dealer, scoreA: sA, scoreB: sB }]);
+      setHands(prevHands => {
+        console.log('  - Functional update: prevHands.length =', prevHands.length, '→ new length =', prevHands.length + 1);
+        return [...prevHands, { dealer, scoreA: sA, scoreB: sB }];
+      });
       showToast('Score added!');
       
       // Reload hands from database to ensure we're in sync
+      console.log('  🔄 Reloading hands from database for game:', currentGameId);
       const { data: reloadedHands, error: reloadError } = await supabase
         .from('hands')
         .select('*')
@@ -404,14 +420,17 @@ export default function PitchGameTracker() {
         .order('hand_order');
       
       if (reloadError) {
-        console.error('Error reloading hands:', reloadError);
+        console.error('  ❌ Error reloading hands:', reloadError);
       } else if (reloadedHands) {
         const mappedHands = reloadedHands.map(h => ({
           dealer: h.dealer,
           scoreA: parseFloat(h.score_a),
           scoreB: parseFloat(h.score_b)
         }));
+        console.log('  ✅ Reloaded', mappedHands.length, 'hands from database');
         setHands(mappedHands);
+      } else {
+        console.log('  ⚠️ reloadedHands is null/undefined');
       }
     }
 
@@ -419,6 +438,7 @@ export default function PitchGameTracker() {
     setScoreB(''); // Clear for next hand
     setEditingHandIndex(null); // Clear editing state
     setShowScoreModal(false);
+    console.log('  ✅ confirmScore complete');
   };
 
   const openDealerModal = () => {
@@ -1628,7 +1648,7 @@ export default function PitchGameTracker() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                 <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                <span>2.2.1 (React)</span>
+                <span>2.2.2 (React)</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                 <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
