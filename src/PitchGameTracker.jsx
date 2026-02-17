@@ -82,16 +82,13 @@ export default function PitchGameTracker() {
   const [sessionEndedAt, setSessionEndedAt] = useState(null);
   const [stakes, setStakes] = useState({ gameScore: 4, bump: 2, points: 1, bonus: 25, tableFontSize: 0.9 });
   const [activeTab, setActiveTab] = useState('game');
+  const [aboutTab, setAboutTab] = useState('info'); // 'info' or 'settings'
+  const [debugLogging, setDebugLogging] = useState(true); // Toggle console logs
   
   // Date filters
   const today = new Date();
-  const yearStart = new Date(today.getFullYear(), 0, 1);
-  const [leaderboardStartDate, setLeaderboardStartDate] = useState(yearStart.toISOString().split('T')[0]);
-  const [leaderboardEndDate, setLeaderboardEndDate] = useState(today.toISOString().split('T')[0]);
-  const [statsStartDate, setStatsStartDate] = useState(yearStart.toISOString().split('T')[0]);
-  const [statsEndDate, setStatsEndDate] = useState(today.toISOString().split('T')[0]);
+  const [leaderboardYear, setLeaderboardYear] = useState(today.getFullYear());
   const [leaderboardSets, setLeaderboardSets] = useState([]);
-  const [statsSets, setStatsSets] = useState([]);
   
   // Modal states
   const [showScoreModal, setShowScoreModal] = useState(false);
@@ -118,23 +115,28 @@ export default function PitchGameTracker() {
     loadData();
   }, [currentTable]);
 
+  // Load debug logging preference from localStorage
   useEffect(() => {
-    // Fetch leaderboard data when dates change
+    const saved = localStorage.getItem('debugLogging');
+    if (saved !== null) {
+      setDebugLogging(saved === 'true');
+    }
+  }, []);
+
+  // Save debug logging preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('debugLogging', debugLogging);
+  }, [debugLogging]);
+
+  useEffect(() => {
     const fetchLeaderboardData = async () => {
-      const sets = await fetchAllSetsForDateRange(leaderboardStartDate, leaderboardEndDate);
+      const startDate = `${leaderboardYear}-01-01`;
+      const endDate = `${leaderboardYear}-12-31`;
+      const sets = await fetchAllSetsForDateRange(startDate, endDate);
       setLeaderboardSets(sets);
     };
     fetchLeaderboardData();
-  }, [leaderboardStartDate, leaderboardEndDate]);
-
-  useEffect(() => {
-    // Fetch stats data when dates change
-    const fetchStatsData = async () => {
-      const sets = await fetchAllSetsForDateRange(statsStartDate, statsEndDate);
-      setStatsSets(sets);
-    };
-    fetchStatsData();
-  }, [statsStartDate, statsEndDate]);
+  }, [leaderboardYear]);
 
   const loadData = async () => {
     try {
@@ -329,6 +331,10 @@ export default function PitchGameTracker() {
   };
 
   const openScoreModal = () => {
+    if (teamA.length < 2 || teamB.length < 2) {
+      showToast('Each team needs 2 or 3 players before scoring');
+      return;
+    }
     if (dealers.length === 0) {
       if (window.confirm('Dealers not set! Would you like to select dealers now?')) {
         setShowDealerModal(true);
@@ -348,12 +354,19 @@ export default function PitchGameTracker() {
     setShowScoreModal(true);
   };
 
+  // Helper for conditional console logging
+  const debugLog = (...args) => {
+    if (debugLogging) {
+      console.log(...args);
+    }
+  };
+
   const confirmScore = async () => {
-    console.log('📝 confirmScore called');
-    console.log('  - currentGameId:', currentGameId);
-    console.log('  - dealers:', dealers);
-    console.log('  - hands.length:', hands.length);
-    console.log('  - scoreA:', scoreA, 'scoreB:', scoreB);
+    debugLog('📝 confirmScore called');
+    debugLog('  - currentGameId:', currentGameId);
+    debugLog('  - dealers:', dealers);
+    debugLog('  - hands.length:', hands.length);
+    debugLog('  - scoreA:', scoreA, 'scoreB:', scoreB);
     
     const sA = scoreA.trim() === '' ? 0 : parseFloat(scoreA);
     const sB = scoreB.trim() === '' ? 0 : parseFloat(scoreB);
@@ -370,7 +383,7 @@ export default function PitchGameTracker() {
 
     if (editingHandIndex !== null) {
       // Edit existing hand
-      console.log('  - Editing hand at index:', editingHandIndex);
+      debugLog('  - Editing hand at index:', editingHandIndex);
       await supabase
         .from('hands')
         .update({ score_a: sA, score_b: sB })
@@ -381,12 +394,12 @@ export default function PitchGameTracker() {
       newHands[editingHandIndex] = { ...newHands[editingHandIndex], scoreA: sA, scoreB: sB };
       setHands(newHands);
       showToast('Hand updated');
-      console.log('  ✅ Hand updated');
+      debugLog('  ✅ Hand updated');
     } else {
       // Add new hand
       const dealer = dealers[hands.length % dealers.length];
-      console.log('  - Adding new hand, dealer:', dealer);
-      console.log('  - Inserting to database...');
+      debugLog('  - Adding new hand, dealer:', dealer);
+      debugLog('  - Inserting to database...');
       
       const { data, error } = await supabase.from('hands').insert({
         game_id: currentGameId,
@@ -402,17 +415,17 @@ export default function PitchGameTracker() {
         return;
       }
 
-      console.log('  ✅ Hand saved to database:', data);
+      debugLog('  ✅ Hand saved to database:', data);
 
       // Use functional update to avoid stale closure
       setHands(prevHands => {
-        console.log('  - Functional update: prevHands.length =', prevHands.length, '→ new length =', prevHands.length + 1);
+        debugLog('  - Functional update: prevHands.length =', prevHands.length, '→ new length =', prevHands.length + 1);
         return [...prevHands, { dealer, scoreA: sA, scoreB: sB }];
       });
       showToast('Score added!');
       
       // Reload hands from database to ensure we're in sync
-      console.log('  🔄 Reloading hands from database for game:', currentGameId);
+      debugLog('  🔄 Reloading hands from database for game:', currentGameId);
       const { data: reloadedHands, error: reloadError } = await supabase
         .from('hands')
         .select('*')
@@ -427,10 +440,10 @@ export default function PitchGameTracker() {
           scoreA: parseFloat(h.score_a),
           scoreB: parseFloat(h.score_b)
         }));
-        console.log('  ✅ Reloaded', mappedHands.length, 'hands from database');
+        debugLog('  ✅ Reloaded', mappedHands.length, 'hands from database');
         setHands(mappedHands);
       } else {
-        console.log('  ⚠️ reloadedHands is null/undefined');
+        debugLog('  ⚠️ reloadedHands is null/undefined');
       }
     }
 
@@ -438,7 +451,7 @@ export default function PitchGameTracker() {
     setScoreB(''); // Clear for next hand
     setEditingHandIndex(null); // Clear editing state
     setShowScoreModal(false);
-    console.log('  ✅ confirmScore complete');
+    debugLog('  ✅ confirmScore complete');
   };
 
   const openDealerModal = () => {
@@ -771,52 +784,8 @@ export default function PitchGameTracker() {
       }
     }
 
-    // Check for 3-game set completion (no split occurred)
-    if (newSetGames.length === 3) {
-      let stA = 0, stB = 0;
-      newSetGames.forEach(game => {
-        stA += game.scoreA;
-        stB += game.scoreB;
-      });
-
-      const aWins = newSetGames.filter(g => g.winner === 'A').length;
-      const bWins = newSetGames.filter(g => g.winner === 'B').length;
-
-      if (aWins === 3) {
-        stA += stakes.bonus;
-        stB -= stakes.bonus;
-        showToast(`A wins all 3! +$${stakes.bonus}`);
-      } else if (bWins === 3) {
-        stB += stakes.bonus;
-        stA -= stakes.bonus;
-        showToast(`B wins all 3! +$${stakes.bonus}`);
-      }
-
-      await supabase.from('sets').insert({
-        team_a_players: teamA,
-        team_b_players: teamB,
-        team_a_score: stA,
-        team_b_score: stB,
-        table_number: currentTable,
-        completed_at: new Date().toISOString()
-      });
-
-      const newSet = {
-        teamA: [...teamA],
-        teamB: [...teamB],
-        teamAScore: stA,
-        teamBScore: stB,
-        completed_at: new Date().toISOString()
-      };
-      
-      setSetHistory([newSet, ...setHistory]);
-      setAllSets([newSet, ...allSets]);
-      showToast(`Set done! ${stA > stB ? 'A' : 'B'} wins!`);
-      setCurrentSetGames([]);
-    }
-
     // NO SPLIT OCCURRED - Start new game normally
-    console.log('🆕 No split, starting next game...');
+    debugLog('🆕 No split, starting next game...');
     await startNewGame();
     setShowEndGameModal(false);
   };
@@ -894,7 +863,7 @@ export default function PitchGameTracker() {
   };
 
   const startNewGame = async () => {
-    console.log('🎮 Starting new game...');
+    debugLog('🎮 Starting new game...');
     
     // Clear all game state
     setHands([]);
@@ -933,7 +902,7 @@ export default function PitchGameTracker() {
     if (newGame) {
       setCurrentGameId(newGame.id);
       setGameNumber(newGame.game_number);
-      console.log(`✅ New game created: Game #${newGame.game_number}, ID: ${newGame.id}`);
+      debugLog(`✅ New game created: Game #${newGame.game_number}, ID: ${newGame.id}`);
     }
   };
 
@@ -946,21 +915,21 @@ export default function PitchGameTracker() {
       return;
     }
 
-    console.log('🗑️💥 WIPING ALL DATA FROM DATABASE');
+    debugLog('🗑️💥 WIPING ALL DATA FROM DATABASE');
     try {
       // Delete in order: hands → games → sets
       await supabase.from('hands').delete().neq('id', 0);
-      console.log('✅ Deleted all hands');
+      debugLog('✅ Deleted all hands');
       
       await supabase.from('games').delete().neq('id', 0);
-      console.log('✅ Deleted all games');
+      debugLog('✅ Deleted all games');
       
       await supabase.from('sets').delete().neq('id', 0);
-      console.log('✅ Deleted all sets');
+      debugLog('✅ Deleted all sets');
       
       // Clear all localStorage
       localStorage.clear();
-      console.log('✅ Cleared localStorage');
+      debugLog('✅ Cleared localStorage');
       
       // Reset all state
       setSetHistory([]);
@@ -972,7 +941,7 @@ export default function PitchGameTracker() {
       await startNewGame();
       
       showToast('🗑️ ALL DATA WIPED - Database is empty, starting fresh');
-      console.log('✅ All data wiped, fresh game started');
+      debugLog('✅ All data wiped, fresh game started');
     } catch (err) {
       console.error('❌ Error wiping data:', err);
       showToast('Error wiping data: ' + err.message);
@@ -980,14 +949,12 @@ export default function PitchGameTracker() {
   };
 
   const endSet = async () => {
-    // Can end set with 1, 2, or 3 games
     if (currentSetGames.length === 0) {
       showToast('Cannot end set - no games played');
       setShowEndSetModal(false);
       return;
     }
 
-    // Calculate final scores
     let stA = 0, stB = 0;
     currentSetGames.forEach(game => {
       stA += game.scoreA;
@@ -997,7 +964,7 @@ export default function PitchGameTracker() {
     const aWins = currentSetGames.filter(g => g.winner === 'A').length;
     const bWins = currentSetGames.filter(g => g.winner === 'B').length;
 
-    // Add $25 bonus ONLY if 3 games played and one team won all 3
+    // Add bonus ONLY if 3 games played and one team won all 3
     if (currentSetGames.length === 3) {
       if (aWins === 3) {
         stA += stakes.bonus;
@@ -1010,7 +977,6 @@ export default function PitchGameTracker() {
       }
     }
 
-    // Save set to database
     await supabase.from('sets').insert({
       team_a_players: teamA,
       team_b_players: teamB,
@@ -1027,14 +993,15 @@ export default function PitchGameTracker() {
       teamBScore: stB,
       completed_at: new Date().toISOString()
     };
-    
+
     setSetHistory([newSet, ...setHistory]);
     setAllSets([newSet, ...allSets]);
-    
-    // Reset for new set
     setCurrentSetGames([]);
     setShowEndSetModal(false);
-    showToast(`Set complete with ${currentSetGames.length} game(s)! Starting new set...`);
+    showToast(`Set complete! Starting new set...`);
+
+    // Start fresh game 1 of new set
+    await startNewGame();
   };
 
   // Fetch all sets for date range (for Stats/Leaderboard tabs)
@@ -1109,7 +1076,7 @@ export default function PitchGameTracker() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 2rem', borderBottom: '2px solid #1e293b', background: '#0f172a', flexWrap: 'wrap' }}>
-        {['game', 'players', 'leaderboard', 'stats', 'settings', 'about'].map(tab => (
+        {['game', 'players', 'leaderboard', 'settings', 'about'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -1126,7 +1093,7 @@ export default function PitchGameTracker() {
               transition: 'all 0.2s'
             }}
           >
-            {tab === 'leaderboard' ? '🏆 Leaderboard' : tab === 'stats' ? '📊 Stats' : tab}
+            {tab === 'leaderboard' ? '🏆 Leaderboard' : tab}
           </button>
         ))}
       </div>
@@ -1181,7 +1148,6 @@ export default function PitchGameTracker() {
                 End Set {currentSetGames.length > 0 ? `(${currentSetGames.length})` : '(0/3)'}
               </button>
               <button onClick={() => setShowEndSessionModal(true)} style={buttonStyle('#8b5cf6')}>End Session</button>
-              <button onClick={wipeAllData} style={{ ...buttonStyle('#dc2626'), fontSize: '0.875rem' }}>⚠️ Wipe All Data</button>
             </div>
 
             <h3 style={{ marginTop: '2rem', marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Scores</h3>
@@ -1349,7 +1315,7 @@ export default function PitchGameTracker() {
                                 const total = playerTotals[p];
                                 const color = total >= 0 ? '#10b981' : '#ef4444';
                                 return (
-                                  <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, color }}>${total.toFixed(1)}</th>
+                                  <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, color }}>{total.toFixed(1)}</th>
                                 );
                               });
                             })()}
@@ -1385,7 +1351,7 @@ export default function PitchGameTracker() {
                                     
                                     return (
                                       <td key={p} style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: val !== 0 ? '#6366f1' : '#64748b', fontWeight: val !== 0 ? '600' : '400' }}>
-                                        {val !== 0 ? `$${val.toFixed(1)}` : '-'}
+                                        {val !== 0 ? `${val.toFixed(1)}` : '-'}
                                       </td>
                                     );
                                   })}
@@ -1470,90 +1436,27 @@ export default function PitchGameTracker() {
         {activeTab === 'leaderboard' && (
           <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
             <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>🏆 Player Leaderboard</h2>
-            <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '700' }}>Date Range</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Start Date:</label>
-                  <input type="date" value={leaderboardStartDate} onChange={(e) => setLeaderboardStartDate(e.target.value)} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>End Date:</label>
-                  <input type="date" value={leaderboardEndDate} onChange={(e) => setLeaderboardEndDate(e.target.value)} style={inputStyle} />
-                </div>
-              </div>
+            <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <label style={{ fontWeight: '600', color: '#94a3b8', fontSize: '0.875rem' }}>Year:</label>
+              <select
+                value={leaderboardYear}
+                onChange={(e) => setLeaderboardYear(parseInt(e.target.value))}
+                style={{ ...inputStyle, width: 'auto', padding: '0.5rem 1rem' }}
+              >
+                {Array.from({ length: 5 }, (_, i) => today.getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
             {(() => {
-              // Use pre-fetched leaderboard sets (already filtered by date in database query)
               const filteredSets = leaderboardSets;
-              if (filteredSets.length === 0) return <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#0f172a', borderRadius: '12px' }}><div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</div><p style={{ fontSize: '1.1rem' }}>No sets found in this date range</p><p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Try adjusting your date filters</p></div>;
+              if (filteredSets.length === 0) return <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#0f172a', borderRadius: '12px' }}><div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</div><p style={{ fontSize: '1.1rem' }}>No sets found for {leaderboardYear}</p></div>;
               const playerStats = {}; filteredSets.forEach(set => { const aMult = set.teamA.length < set.teamB.length ? 1.5 : 1; const bMult = set.teamB.length < set.teamA.length ? 1.5 : 1; set.teamA.forEach(p => { if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 }; playerStats[p].sets++; const earnings = set.teamAScore * aMult; playerStats[p].totalEarnings += earnings; if (set.teamAScore > set.teamBScore) playerStats[p].wins++; else playerStats[p].losses++; }); set.teamB.forEach(p => { if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 }; playerStats[p].sets++; const earnings = set.teamBScore * bMult; playerStats[p].totalEarnings += earnings; if (set.teamBScore > set.teamAScore) playerStats[p].wins++; else playerStats[p].losses++; }); });
               const sortedPlayers = Object.keys(playerStats).sort((a, b) => playerStats[b].totalEarnings - playerStats[a].totalEarnings);
-              return <div><div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden' }}><div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr style={{ background: '#334155' }}><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Rank</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Player</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Sets</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Wins</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Losses</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Win %</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Total Earnings</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Avg/Set</th></tr></thead><tbody>{sortedPlayers.map((p, index) => { const stats = playerStats[p]; const winPct = ((stats.wins / stats.sets) * 100).toFixed(1); const avgPerSet = (stats.totalEarnings / stats.sets).toFixed(1); const earningsColor = stats.totalEarnings >= 0 ? '#10b981' : '#ef4444'; let rankDisplay = index + 1; if (index === 0) rankDisplay = '🥇'; else if (index === 1) rankDisplay = '🥈'; else if (index === 2) rankDisplay = '🥉'; return <tr key={p} style={{ background: index % 2 === 0 ? '#1e293b' : '#0f172a', borderBottom: '1px solid #334155' }}><td style={{ padding: '0.75rem', fontSize: '1.2rem' }}>{rankDisplay}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: '#e2e8f0' }}>{p}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{stats.sets}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#10b981', fontWeight: '600' }}>{stats.wins}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#ef4444', fontWeight: '600' }}>{stats.losses}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{winPct}%</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: earningsColor }}>${stats.totalEarnings.toFixed(1)}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>${avgPerSet}</td></tr>; })}</tbody></table></div></div></div>;
+              return <div><div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden' }}><div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr style={{ background: '#334155' }}><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Rank</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Player</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Sets</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Wins</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Losses</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Win %</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Total</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Avg/Set</th></tr></thead><tbody>{sortedPlayers.map((p, index) => { const stats = playerStats[p]; const winPct = ((stats.wins / stats.sets) * 100).toFixed(1); const avgPerSet = (stats.totalEarnings / stats.sets).toFixed(1); const earningsColor = stats.totalEarnings >= 0 ? '#10b981' : '#ef4444'; let rankDisplay = index + 1; if (index === 0) rankDisplay = '🥇'; else if (index === 1) rankDisplay = '🥈'; else if (index === 2) rankDisplay = '🥉'; return <tr key={p} style={{ background: index % 2 === 0 ? '#1e293b' : '#0f172a', borderBottom: '1px solid #334155' }}><td style={{ padding: '0.75rem', fontSize: '1.2rem' }}>{rankDisplay}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: '#e2e8f0' }}>{p}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{stats.sets}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#10b981', fontWeight: '600' }}>{stats.wins}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#ef4444', fontWeight: '600' }}>{stats.losses}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{winPct}%</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: earningsColor }}>{stats.totalEarnings.toFixed(1)}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{avgPerSet}</td></tr>; })}</tbody></table></div></div></div>;
             })()}
           </div>
         )}
-        {activeTab === 'stats' && (
-          <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-            {/* Date Filters */}
-            <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '700' }}>Date Range</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>Start Date:</label>
-                  <input type="date" value={statsStartDate} onChange={(e) => setStatsStartDate(e.target.value)} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#94a3b8', fontWeight: '600' }}>End Date:</label>
-                  <input type="date" value={statsEndDate} onChange={(e) => setStatsEndDate(e.target.value)} style={inputStyle} />
-                </div>
-              </div>
-            </div>
-
-            {/* Set History Table */}
-            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Set History</h3>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', background: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
-                <thead>
-                  <tr style={{ background: '#334155' }}>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Set</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Team A</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Team B</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>A Score</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>B Score</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Winner</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    // Use pre-fetched stats sets (already filtered by date in database query)
-                    const filteredSets = statsSets;
-
-                    if (filteredSets.length === 0) {
-                      return (
-                        <tr>
-                          <td colSpan={6} style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>No sets in this date range</td>
-                        </tr>
-                      );
-                    }
-
-                    return filteredSets.map((s, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? '#1e293b' : '#0f172a' }}>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{filteredSets.length - i}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{s.teamA.join(', ')}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{s.teamB.join(', ')}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#10b981', fontWeight: '600' }}>{s.teamAScore.toFixed(1)}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#f59e0b', fontWeight: '600' }}>{s.teamBScore.toFixed(1)}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>{s.teamAScore > s.teamBScore ? 'Team A' : 'Team B'}</td>
-                      </tr>
-                    ));
-                  })()}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
         {activeTab === 'settings' && (
           <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
             <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>Settings - Stakes</h2>
@@ -1602,19 +1505,6 @@ export default function PitchGameTracker() {
                   style={inputStyle}
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Table Font Size (rem):</label>
-                <input
-                  type="number"
-                  value={stakes.tableFontSize}
-                  onChange={(e) => setStakes({ ...stakes, tableFontSize: parseFloat(e.target.value) })}
-                  min="0.5"
-                  max="2"
-                  step="0.1"
-                  style={inputStyle}
-                />
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Default: 0.9 | Range: 0.5-2.0</p>
-              </div>
               <button onClick={saveStakes} style={buttonStyle('#6366f1')}>Save Settings</button>
             </div>
           </div>
@@ -1623,24 +1513,122 @@ export default function PitchGameTracker() {
         {activeTab === 'about' && (
           <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
             <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>About Pitch Game Tracker</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
-                <span style={{ fontWeight: '600', color: '#94a3b8' }}>Games Played</span>
-                <span style={{ color: '#6366f1', fontWeight: '700', fontSize: '1.1rem' }}>#{gameNumber}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
-                <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                <span>2.2.3 (React)</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
-                <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
-                <span>Feb 12, 2026</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0' }}>
-                <span style={{ fontWeight: '600', color: '#94a3b8' }}>Description</span>
-                <span>Multi-table pitch game scoring system</span>
-              </div>
+            
+            {/* About Sub-Tabs */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '2px solid #334155' }}>
+              <button
+                onClick={() => setAboutTab('info')}
+                style={{
+                  ...buttonStyle(aboutTab === 'info' ? '#6366f1' : '#475569'),
+                  borderRadius: '8px 8px 0 0',
+                  borderBottom: aboutTab === 'info' ? '3px solid #6366f1' : 'none',
+                  marginBottom: '-2px'
+                }}
+              >
+                Info
+              </button>
+              <button
+                onClick={() => setAboutTab('settings')}
+                style={{
+                  ...buttonStyle(aboutTab === 'settings' ? '#6366f1' : '#475569'),
+                  borderRadius: '8px 8px 0 0',
+                  borderBottom: aboutTab === 'settings' ? '3px solid #6366f1' : 'none',
+                  marginBottom: '-2px'
+                }}
+              >
+                Settings
+              </button>
             </div>
+
+            {/* Info Tab */}
+            {aboutTab === 'info' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
+                  <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
+                  <span>2.2.4 (React)</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
+                  <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
+                  <span>Feb 17, 2026</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0' }}>
+                  <span style={{ fontWeight: '600', color: '#94a3b8' }}>Description</span>
+                  <span>Multi-table pitch game scoring system</span>
+                </div>
+              </div>
+            )}
+
+            {/* Settings Tab */}
+            {aboutTab === 'settings' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {/* Font Size Control */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                    Table Font Size (rem):
+                  </label>
+                  <input
+                    type="number"
+                    value={stakes.tableFontSize}
+                    onChange={(e) => setStakes({ ...stakes, tableFontSize: parseFloat(e.target.value) })}
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    style={inputStyle}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    Default: 0.9 | Range: 0.5-2.0
+                  </p>
+                </div>
+
+                {/* Debug Logging Toggle */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={debugLogging}
+                      onChange={(e) => setDebugLogging(e.target.checked)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '600' }}>Debug Logging</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        Show detailed console logs for troubleshooting
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Wipe All Data Button */}
+                <div style={{ 
+                  padding: '1rem', 
+                  background: '#450a0a', 
+                  borderRadius: '8px', 
+                  border: '2px solid #dc2626' 
+                }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: '700', color: '#fca5a5' }}>
+                    ⚠️ Danger Zone
+                  </h3>
+                  <p style={{ fontSize: '0.875rem', color: '#fca5a5', marginBottom: '1rem' }}>
+                    This will permanently delete ALL data from the database. This action cannot be undone.
+                  </p>
+                  <button 
+                    onClick={wipeAllData} 
+                    style={{ 
+                      ...buttonStyle('#dc2626'),
+                      width: '100%',
+                      fontWeight: '700'
+                    }}
+                  >
+                    🗑️ Wipe All Data
+                  </button>
+                </div>
+
+                {/* Save Settings Button */}
+                <button onClick={saveStakes} style={{ ...buttonStyle('#10b981'), fontWeight: '700' }}>
+                  💾 Save Settings
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
