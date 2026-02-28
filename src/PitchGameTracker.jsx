@@ -66,14 +66,63 @@ const Modal = ({ show, onClose, children }) => {
 // Main App Component
 export default function PitchGameTracker() {
   // =====================================================
-  // AUTH STATE & LOGIC
+  // ALL STATE DECLARATIONS - MUST BE AT TOP
   // =====================================================
+  
+  // Auth state
   const [session, setSession] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const isResetPage = window.location.hash === '#reset-password';
+  
+  // Main app state
+  const [currentTable, setCurrentTable] = useState(1);
+  const [players, setPlayers] = useState([]);
+  const [teamA, setTeamA] = useState([]);
+  const [teamB, setTeamB] = useState([]);
+  const [dealers, setDealers] = useState([]);
+  const [hands, setHands] = useState([]);
+  const [gameNumber, setGameNumber] = useState(1);
+  const [currentGameId, setCurrentGameId] = useState(null);
+  const [completedGames, setCompletedGames] = useState([]);
+  const [setHistory, setSetHistory] = useState([]); // Filtered by session for Game tab
+  const [allSets, setAllSets] = useState([]); // Unfiltered for Stats/Leaderboard tabs
+  const [currentSetGames, setCurrentSetGames] = useState([]);
+  const [sessionEndedAt, setSessionEndedAt] = useState(null);
+  const [stakes, setStakes] = useState({ gameScore: 4, bump: 2, points: 1, bonus: 25, tableFontSize: 0.9 });
+  const [activeTab, setActiveTab] = useState('game');
+  const [aboutTab, setAboutTab] = useState('info'); // 'info' or 'settings'
+  const [debugLogging, setDebugLogging] = useState(true); // Toggle console logs
+  
+  // Date filters
+  const [leaderboardYear, setLeaderboardYear] = useState(today.getFullYear());
+  const [leaderboardSets, setLeaderboardSets] = useState([]);
+  
+  // Modal states
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [showDealerModal, setShowDealerModal] = useState(false);
+  const [showEndGameModal, setShowEndGameModal] = useState(false);
+  const [showEndSessionModal, setShowEndSessionModal] = useState(false);
+  const [showEndSetModal, setShowEndSetModal] = useState(false);
+  const [scoreA, setScoreA] = useState('');
+  const [scoreB, setScoreB] = useState('');
+  const [tempDealers, setTempDealers] = useState([]);
+  const [editingHandIndex, setEditingHandIndex] = useState(null);
+  const [newPlayerName, setNewPlayerName] = useState('');
+  
+  // Toast
+  const [toast, setToast] = useState({ show: false, message: '' });
 
+  // =====================================================
+  // COMPUTED VALUES & CONSTANTS
+  // =====================================================
+  const isResetPage = window.location.hash === '#reset-password';
+  const today = new Date();
+
+  // =====================================================
+  // AUTH LOGIC & EFFECTS
+  // =====================================================
+  
   // Check authentication on mount
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -115,6 +164,10 @@ export default function PitchGameTracker() {
     await supabase.auth.signOut();
   };
 
+  // =====================================================
+  // CONDITIONAL RENDERS (Auth checks)
+  // =====================================================
+  
   // Show reset password page
   if (isResetPage) {
     return <ResetPasswordPage />;
@@ -141,45 +194,8 @@ export default function PitchGameTracker() {
   }
 
   // =====================================================
-  // MAIN APP STATE (User is authenticated)
+  // HELPER FUNCTIONS
   // =====================================================
-  const [currentTable, setCurrentTable] = useState(1);
-  const [players, setPlayers] = useState([]);
-  const [teamA, setTeamA] = useState([]);
-  const [teamB, setTeamB] = useState([]);
-  const [dealers, setDealers] = useState([]);
-  const [hands, setHands] = useState([]);
-  const [gameNumber, setGameNumber] = useState(1);
-  const [currentGameId, setCurrentGameId] = useState(null);
-  const [completedGames, setCompletedGames] = useState([]);
-  const [setHistory, setSetHistory] = useState([]); // Filtered by session for Game tab
-  const [allSets, setAllSets] = useState([]); // Unfiltered for Stats/Leaderboard tabs
-  const [currentSetGames, setCurrentSetGames] = useState([]);
-  const [sessionEndedAt, setSessionEndedAt] = useState(null);
-  const [stakes, setStakes] = useState({ gameScore: 4, bump: 2, points: 1, bonus: 25, tableFontSize: 0.9 });
-  const [activeTab, setActiveTab] = useState('game');
-  const [aboutTab, setAboutTab] = useState('info'); // 'info' or 'settings'
-  const [debugLogging, setDebugLogging] = useState(true); // Toggle console logs
-  
-  // Date filters
-  const today = new Date();
-  const [leaderboardYear, setLeaderboardYear] = useState(today.getFullYear());
-  const [leaderboardSets, setLeaderboardSets] = useState([]);
-  
-  // Modal states
-  const [showScoreModal, setShowScoreModal] = useState(false);
-  const [showDealerModal, setShowDealerModal] = useState(false);
-  const [showEndGameModal, setShowEndGameModal] = useState(false);
-  const [showEndSessionModal, setShowEndSessionModal] = useState(false);
-  const [showEndSetModal, setShowEndSetModal] = useState(false);
-  const [scoreA, setScoreA] = useState('');
-  const [scoreB, setScoreB] = useState('');
-  const [tempDealers, setTempDealers] = useState([]);
-  const [editingHandIndex, setEditingHandIndex] = useState(null);
-  const [newPlayerName, setNewPlayerName] = useState('');
-  
-  // Toast
-  const [toast, setToast] = useState({ show: false, message: '' });
 
   const showToast = (message) => {
     setToast({ show: true, message });
