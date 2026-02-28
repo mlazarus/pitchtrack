@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import AuthPage from './components/AuthPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
+import AdminPanel from './components/AdminPanel';
 
 const supabase = createClient(
   'https://lhlnjggrljdgmytmoaqb.supabase.co',
@@ -67,6 +70,84 @@ const Modal = ({ show, onClose, children }) => {
 
 // Main App Component
 export default function PitchGameTracker() {
+  // =====================================================
+  // AUTH STATE & LOGIC
+  // =====================================================
+  const [session, setSession] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const isResetPage = window.location.hash === '#reset-password';
+
+  // Check authentication on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        loadUserProfile(session.user.id);
+      } else {
+        setAuthLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        loadUserProfile(session.user.id);
+      } else {
+        setUserProfile(null);
+        setAuthLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loadUserProfile = async (userId) => {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (data) {
+      setUserProfile(data);
+    }
+    setAuthLoading(false);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  // Show reset password page
+  if (isResetPage) {
+    return <ResetPasswordPage supabase={supabase} />;
+  }
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        <div style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!session || !userProfile) {
+    return <AuthPage supabase={supabase} />;
+  }
+
+  // =====================================================
+  // MAIN APP STATE (User is authenticated)
+  // =====================================================
   const [currentTable, setCurrentTable] = useState(1);
   const [players, setPlayers] = useState([]);
   const [teamA, setTeamA] = useState([]);
@@ -1047,29 +1128,81 @@ export default function PitchGameTracker() {
     <div style={{ fontFamily: "'Manrope', 'Segoe UI', system-ui, sans-serif", background: '#0a0f1e', color: '#e8edf5', minHeight: '100vh' }}>
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', padding: '1rem 2rem', borderBottom: '3px solid #4f46e5' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.025em' }}>🎮 Pitch Game Tracker</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <label style={{ fontWeight: '600', fontSize: '0.875rem' }}>Table:</label>
-            <select
-              value={currentTable}
-              onChange={(e) => setCurrentTable(parseInt(e.target.value))}
-              style={{
-                padding: '0.4rem 0.8rem',
-                borderRadius: '8px',
-                border: '2px solid #4f46e5',
-                background: 'white',
-                color: '#1e293b',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
-            >
-              <option value={1}>Table 1</option>
-              <option value={2}>Table 2</option>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.025em' }}>🎮 Pitch Game Tracker</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <label style={{ fontWeight: '600', fontSize: '0.875rem' }}>Table:</label>
+              <select
+                value={currentTable}
+                onChange={(e) => setCurrentTable(parseInt(e.target.value))}
+                style={{
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '8px',
+                  border: '2px solid #4f46e5',
+                  background: 'white',
+                  color: '#1e293b',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value={1}>Table 1</option>
+                <option value={2}>Table 2</option>
               <option value={3}>Table 3</option>
               <option value={4}>Table 4</option>
             </select>
+          </div>
+          </div>
+          
+          {/* User Info & Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginRight: '0.5rem' }}>
+              <strong style={{ fontSize: '0.9rem' }}>
+                {userProfile.display_name || userProfile.email.split('@')[0]}
+              </strong>
+              <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                {userProfile.email}
+              </span>
+            </div>
+            {userProfile.is_admin && (
+              <button
+                onClick={() => setShowAdminPanel(true)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderRadius: '8px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '0.875rem',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+              >
+                👨‍💼 Admin
+              </button>
+            )}
+            <button
+              onClick={handleSignOut}
+              style={{
+                padding: '0.5rem 1rem',
+                background: 'rgba(0,0,0,0.2)',
+                border: '2px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '0.875rem',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.background = 'rgba(0,0,0,0.3)'}
+              onMouseOut={(e) => e.target.style.background = 'rgba(0,0,0,0.2)'}
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       </div>
@@ -1857,6 +1990,14 @@ export default function PitchGameTracker() {
           </button>
         </div>
       </Modal>
+
+      {/* Admin Panel Modal */}
+      {showAdminPanel && userProfile.is_admin && (
+        <AdminPanel 
+          supabase={supabase} 
+          onClose={() => setShowAdminPanel(false)} 
+        />
+      )}
 
       {/* Toast */}
       <Toast show={toast.show} message={toast.message} />
