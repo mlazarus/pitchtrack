@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
-const AdminPanel = ({ onClose, currentUserProfile }) => {
+const AdminPanel = ({ onClose, currentUserProfile, session }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -46,6 +46,7 @@ const AdminPanel = ({ onClose, currentUserProfile }) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({
             email: newUserEmail,
@@ -99,6 +100,7 @@ const AdminPanel = ({ onClose, currentUserProfile }) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({ user_id: userId }),
         }
@@ -290,7 +292,7 @@ const AdminPanel = ({ onClose, currentUserProfile }) => {
               </thead>
               <tbody>
                 {users.map(user => (
-                  <tr key={user.id} style={{ borderBottom: '1px solid #dee2e6' }}>
+                  <tr key={user.id} style={{ borderBottom: '1px solid #dee2e6', color: '#111' }}>
                     <td style={{ padding: '12px' }}>{user.display_name || '—'}</td>
                     <td style={{ padding: '12px' }}>{user.email}</td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>

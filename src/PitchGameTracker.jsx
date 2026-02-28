@@ -2053,9 +2053,10 @@ export default function PitchGameTracker() {
 
       {/* Admin Panel Modal */}
       {showAdminPanel && userProfile.is_admin && (
-        <AdminPanel 
-          onClose={() => setShowAdminPanel(false)} 
+        <AdminPanel
+          onClose={() => setShowAdminPanel(false)}
           currentUserProfile={userProfile}
+          session={session}
         />
       )}
 
