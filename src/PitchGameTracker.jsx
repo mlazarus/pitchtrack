@@ -65,10 +65,12 @@ const Modal = ({ show, onClose, children }) => {
 
 // Main App Component
 export default function PitchGameTracker() {
+  const today = new Date();
+
   // =====================================================
   // ALL STATE DECLARATIONS - MUST BE AT TOP
   // =====================================================
-  
+
   // Auth state
   const [session, setSession] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -93,6 +95,7 @@ export default function PitchGameTracker() {
   const [activeTab, setActiveTab] = useState('game');
   const [aboutTab, setAboutTab] = useState('info'); // 'info' or 'settings'
   const [debugLogging, setDebugLogging] = useState(true); // Toggle console logs
+  const [showScoreDetail, setShowScoreDetail] = useState(false); // Toggle score detail in End Game modal
   
   // Date filters
   const [leaderboardYear, setLeaderboardYear] = useState(today.getFullYear());
@@ -117,7 +120,6 @@ export default function PitchGameTracker() {
   // COMPUTED VALUES & CONSTANTS
   // =====================================================
   const isResetPage = window.location.hash === '#reset-password';
-  const today = new Date();
 
   // =====================================================
   // AUTH LOGIC & EFFECTS
@@ -137,6 +139,7 @@ export default function PitchGameTracker() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
+        setAuthLoading(true);
         loadUserProfile(session.user.id);
       } else {
         setUserProfile(null);
@@ -148,14 +151,16 @@ export default function PitchGameTracker() {
   }, []);
 
   const loadUserProfile = async (userId) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('id', userId)
       .single();
-    
+
     if (data) {
       setUserProfile(data);
+    } else {
+      console.error('Failed to load user profile:', error);
     }
     setAuthLoading(false);
   };
@@ -164,10 +169,51 @@ export default function PitchGameTracker() {
     await supabase.auth.signOut();
   };
 
+  // Load initial data
+  useEffect(() => {
+    loadData();
+  }, [currentTable]);
+
+  // Load debug logging preference from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('debugLogging');
+    if (saved !== null) {
+      setDebugLogging(saved === 'true');
+    }
+  }, []);
+
+  // Save debug logging preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('debugLogging', debugLogging);
+  }, [debugLogging]);
+
+  // Load score detail preference from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('showScoreDetail');
+    if (saved !== null) {
+      setShowScoreDetail(saved === 'true');
+    }
+  }, []);
+
+  // Save score detail preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('showScoreDetail', showScoreDetail);
+  }, [showScoreDetail]);
+
+  useEffect(() => {
+    const fetchLeaderboardData = async () => {
+      const startDate = `${leaderboardYear}-01-01`;
+      const endDate = `${leaderboardYear}-12-31`;
+      const sets = await fetchAllSetsForDateRange(startDate, endDate);
+      setLeaderboardSets(sets);
+    };
+    fetchLeaderboardData();
+  }, [leaderboardYear]);
+
   // =====================================================
   // CONDITIONAL RENDERS (Auth checks)
   // =====================================================
-  
+
   // Show reset password page
   if (isResetPage) {
     return <ResetPasswordPage />;
@@ -176,10 +222,10 @@ export default function PitchGameTracker() {
   // Show loading while checking auth
   if (authLoading) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
       }}>
@@ -202,35 +248,7 @@ export default function PitchGameTracker() {
     setTimeout(() => setToast({ show: false, message: '' }), 2000);
   };
 
-  // Load initial data
-  useEffect(() => {
-    loadData();
-  }, [currentTable]);
-
-  // Load debug logging preference from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('debugLogging');
-    if (saved !== null) {
-      setDebugLogging(saved === 'true');
-    }
-  }, []);
-
-  // Save debug logging preference to localStorage
-  useEffect(() => {
-    localStorage.setItem('debugLogging', debugLogging);
-  }, [debugLogging]);
-
-  useEffect(() => {
-    const fetchLeaderboardData = async () => {
-      const startDate = `${leaderboardYear}-01-01`;
-      const endDate = `${leaderboardYear}-12-31`;
-      const sets = await fetchAllSetsForDateRange(startDate, endDate);
-      setLeaderboardSets(sets);
-    };
-    fetchLeaderboardData();
-  }, [leaderboardYear]);
-
-  const loadData = async () => {
+  async function loadData() {
     try {
       // Load players
       const { data: playersData } = await supabase
@@ -360,7 +378,7 @@ export default function PitchGameTracker() {
     } catch (error) {
       console.error('Error loading data:', error);
     }
-  };
+  }
 
   const toggleTeam = async (player) => {
     const inA = teamA.includes(player);
@@ -1168,34 +1186,9 @@ export default function PitchGameTracker() {
           
           {/* User Info & Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginRight: '0.5rem' }}>
-              <strong style={{ fontSize: '0.9rem' }}>
-                {userProfile.display_name || userProfile.email.split('@')[0]}
-              </strong>
-              <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                {userProfile.email}
-              </span>
-            </div>
-            {userProfile.is_admin && (
-              <button
-                onClick={() => setShowAdminPanel(true)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: 'rgba(255,255,255,0.2)',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderRadius: '8px',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  fontSize: '0.875rem',
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
-                onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
-              >
-                👨‍💼 Admin
-              </button>
-            )}
+            <strong style={{ fontSize: '0.9rem' }}>
+              {userProfile.display_name || userProfile.username || userProfile.email.split('@')[0]}
+            </strong>
             <button
               onClick={handleSignOut}
               style={{
@@ -1689,11 +1682,11 @@ export default function PitchGameTracker() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                   <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                  <span>2.2.4 (React)</span>
+                  <span>3 (React + Security)</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                   <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
-                  <span>Feb 17, 2026</span>
+                  <span>Feb 28, 2026</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0' }}>
                   <span style={{ fontWeight: '600', color: '#94a3b8' }}>Description</span>
@@ -1741,6 +1734,50 @@ export default function PitchGameTracker() {
                     </div>
                   </label>
                 </div>
+
+                {/* Score Detail Toggle */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={showScoreDetail}
+                      onChange={(e) => setShowScoreDetail(e.target.checked)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '600' }}>Score Detail</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        Show running total, final score, and bumps when ending a game
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Admin Panel */}
+                {userProfile.is_admin && (
+                  <div>
+                    <button
+                      onClick={() => setShowAdminPanel(true)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        background: '#1e40af',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.875rem',
+                        textAlign: 'left'
+                      }}
+                    >
+                      👨‍💼 Admin Panel
+                    </button>
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                      Manage users and system settings
+                    </p>
+                  </div>
+                )}
 
                 {/* Wipe All Data Button */}
                 <div style={{ 
@@ -1866,15 +1903,27 @@ export default function PitchGameTracker() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div style={{ padding: '1rem', background: '#dcfce7', borderRadius: '8px' }}>
               <h3 style={{ color: '#166534', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '700' }}>Team A</h3>
-              <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Running:</strong> {wA.runningA.toFixed(1)}</p>
-              <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Final:</strong> {wA.scoreA.toFixed(1)}</p>
-              <p style={{ color: '#1e293b' }}><strong>Opp. Bumps:</strong> {wA.bumpsB}</p>
+              {showScoreDetail ? (
+                <>
+                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Running:</strong> {wA.runningA.toFixed(1)}</p>
+                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Final:</strong> {wA.scoreA.toFixed(1)}</p>
+                  <p style={{ color: '#1e293b' }}><strong>Opp. Bumps:</strong> {wA.bumpsB}</p>
+                </>
+              ) : (
+                <p style={{ color: '#1e293b', fontSize: '1.5rem', fontWeight: '700' }}>{Math.round(wA.runningA)}</p>
+              )}
             </div>
             <div style={{ padding: '1rem', background: '#fed7aa', borderRadius: '8px' }}>
               <h3 style={{ color: '#92400e', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '700' }}>Team B</h3>
-              <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Running:</strong> {wB.runningB.toFixed(1)}</p>
-              <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Final:</strong> {wB.scoreB.toFixed(1)}</p>
-              <p style={{ color: '#1e293b' }}><strong>Opp. Bumps:</strong> {wB.bumpsA}</p>
+              {showScoreDetail ? (
+                <>
+                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Running:</strong> {wB.runningB.toFixed(1)}</p>
+                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Final:</strong> {wB.scoreB.toFixed(1)}</p>
+                  <p style={{ color: '#1e293b' }}><strong>Opp. Bumps:</strong> {wB.bumpsA}</p>
+                </>
+              ) : (
+                <p style={{ color: '#1e293b', fontSize: '1.5rem', fontWeight: '700' }}>{Math.round(wB.runningB)}</p>
+              )}
             </div>
           </div>
         </div>
