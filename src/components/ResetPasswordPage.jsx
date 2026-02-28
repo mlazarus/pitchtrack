@@ -2,43 +2,44 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
 const ResetPasswordPage = () => {
-  const [newPassword, setNewPassword] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // Check if we have a recovery session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        setError('Invalid or expired reset link');
-      }
-    });
-  }, [supabase]);
+    // Check if this is a password reset link
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    
+    if (type !== 'recovery') {
+      setError('Invalid password reset link');
+    }
+  }, []);
 
-  const handleSubmit = async (e) => {
+  const handleResetPassword = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (newPassword !== confirmPassword) {
+    if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
 
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: password
     });
 
-    if (error) {
-      setError(error.message);
+    if (updateError) {
+      setError(updateError.message);
       setLoading(false);
     } else {
       setSuccess(true);
@@ -48,103 +49,124 @@ const ResetPasswordPage = () => {
     }
   };
 
-  const containerStyle = {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '2rem'
-  };
-
-  const cardStyle = {
-    background: 'white',
-    borderRadius: '16px',
-    padding: '2rem',
-    maxWidth: '450px',
-    width: '100%',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '0.75rem',
-    border: '2px solid #e2e8f0',
-    borderRadius: '8px',
-    fontSize: '1rem',
-    marginBottom: '1rem'
-  };
-
-  const buttonStyle = {
-    width: '100%',
-    padding: '0.75rem',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#6366f1',
-    color: 'white',
-    fontSize: '1rem',
-    fontWeight: '600',
-    cursor: loading ? 'not-allowed' : 'pointer',
-    opacity: loading ? 0.5 : 1
-  };
-
   if (success) {
     return (
-      <div style={containerStyle}>
-        <div style={cardStyle}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
-            <h1 style={{ color: '#10b981', marginBottom: '0.5rem' }}>Password Reset!</h1>
-            <p style={{ color: '#64748b' }}>
-              Redirecting you to sign in...
-            </p>
-          </div>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: '20px'
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          maxWidth: '400px',
+          width: '100%',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✓</div>
+          <h2 style={{ color: '#28a745', marginBottom: '16px' }}>Password Reset Successful</h2>
+          <p style={{ color: '#666' }}>Redirecting to sign in...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem', fontWeight: '800', color: '#1e293b' }}>
-          🔐 Reset Password
-        </h1>
-        <p style={{ color: '#64748b', marginBottom: '2rem' }}>
-          Enter your new password
-        </p>
-
-        {error && (
-          <div style={{ 
-            padding: '1rem', 
-            background: '#fee2e2', 
-            borderRadius: '8px', 
-            color: '#dc2626',
-            marginBottom: '1rem'
-          }}>
-            {error}
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '20px'
+    }}>
+      <div style={{
+        background: 'white',
+        padding: '40px',
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+        maxWidth: '400px',
+        width: '100%'
+      }}>
+        <h2 style={{ marginBottom: '24px', color: '#333', textAlign: 'center' }}>Reset Your Password</h2>
+        
+        <form onSubmit={handleResetPassword}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontWeight: '500' }}>
+              New Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '16px',
+                boxSizing: 'border-box'
+              }}
+            />
           </div>
-        )}
 
-        <form onSubmit={handleSubmit}>
-          <input
-            type="password"
-            placeholder="New password (min 6 characters)"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            style={inputStyle}
-            required
-            minLength={6}
-          />
-          <input
-            type="password"
-            placeholder="Confirm new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            style={inputStyle}
-            required
-          />
-          <button type="submit" style={buttonStyle} disabled={loading}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontWeight: '500' }}>
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '16px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {error && (
+            <div style={{
+              padding: '12px',
+              background: '#fee',
+              border: '1px solid #fcc',
+              borderRadius: '6px',
+              color: '#c33',
+              marginBottom: '20px',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: loading ? '#ccc' : '#667eea',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '16px',
+              fontWeight: '500'
+            }}
+          >
             {loading ? 'Updating...' : 'Reset Password'}
           </button>
         </form>
