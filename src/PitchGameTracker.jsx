@@ -117,7 +117,7 @@ export default function PitchGameTracker() {
 
   // Show reset password page
   if (isResetPage) {
-    return <ResetPasswordPage supabase={supabase} />;
+    return <ResetPasswordPage />;
   }
 
   // Show loading while checking auth
@@ -1989,8 +1989,8 @@ export default function PitchGameTracker() {
       {/* Admin Panel Modal */}
       {showAdminPanel && userProfile.is_admin && (
         <AdminPanel 
-          supabase={supabase} 
           onClose={() => setShowAdminPanel(false)} 
+          currentUserProfile={userProfile}
         />
       )}
 
