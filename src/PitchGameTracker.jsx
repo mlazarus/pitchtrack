@@ -137,7 +137,7 @@ export default function PitchGameTracker() {
 
   // Show login page if not authenticated
   if (!session || !userProfile) {
-    return <AuthPage supabase={supabase} />;
+    return <AuthPage />;
   }
 
   // =====================================================
