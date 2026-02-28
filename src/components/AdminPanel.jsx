@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 
-const AdminPanel = ({ supabase, onClose }) => {
+const AdminPanel = ({ onClose, currentUserProfile }) => {
   const [users, setUsers] = useState([]);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
