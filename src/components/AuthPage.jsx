@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { supabase } from '../supabaseClient';
 
-const AuthPage = ({ supabase }) => {
+const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showResetForm, setShowResetForm] = useState(false);
