@@ -4,10 +4,9 @@ import { supabase } from '../supabaseClient';
 const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showResetForm, setShowResetForm] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -23,191 +22,172 @@ const AuthPage = () => {
       setError(signInError.message);
       setLoading(false);
     }
-    // If successful, parent component will handle redirect
+    // If successful, parent component will handle redirect via session change
   };
 
-  const handlePasswordReset = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/#reset-password`,
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      alert('✅ Password reset email sent! Check your inbox.');
-      setShowResetForm(false);
-      setResetEmail('');
-    }
-    setLoading(false);
-  };
-
-  const containerStyle = {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '2rem'
-  };
-
-  const cardStyle = {
-    background: 'white',
-    borderRadius: '16px',
-    padding: '2rem',
-    maxWidth: '450px',
-    width: '100%',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '0.75rem',
-    border: '2px solid #e2e8f0',
-    borderRadius: '8px',
-    fontSize: '1rem',
-    marginBottom: '1rem'
-  };
-
-  const buttonStyle = {
-    width: '100%',
-    padding: '0.75rem',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#6366f1',
-    color: 'white',
-    fontSize: '1rem',
-    fontWeight: '600',
-    cursor: loading ? 'not-allowed' : 'pointer',
-    opacity: loading ? 0.5 : 1,
-    marginBottom: '0.5rem'
-  };
-
-  // Password Reset Form
-  if (showResetForm) {
+  if (showResetPassword) {
     return (
-      <div style={containerStyle}>
-        <div style={cardStyle}>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem', fontWeight: '800', color: '#1e293b' }}>
-            🔐 Reset Password
-          </h1>
-          <p style={{ color: '#64748b', marginBottom: '2rem' }}>
-            Enter your email to receive a password reset link
-          </p>
-
-          {error && (
-            <div style={{ 
-              padding: '1rem', 
-              background: '#fee2e2', 
-              borderRadius: '8px', 
-              color: '#dc2626',
-              marginBottom: '1rem'
-            }}>
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handlePasswordReset}>
-            <input
-              type="email"
-              placeholder="your@email.com"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-              style={inputStyle}
-              required
-            />
-            <button type="submit" style={buttonStyle} disabled={loading}>
-              {loading ? 'Sending...' : 'Send Reset Link'}
-            </button>
-          </form>
-
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: '20px'
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          maxWidth: '400px',
+          width: '100%'
+        }}>
+          <h2 style={{ marginBottom: '24px', color: '#333', textAlign: 'center' }}>Reset Password</h2>
+          {/* Reset password form would go here */}
           <button
-            onClick={() => setShowResetForm(false)}
-            style={{ ...buttonStyle, background: '#64748b' }}
+            onClick={() => setShowResetPassword(false)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
           >
-            ← Back to Sign In
+            Back to Sign In
           </button>
         </div>
       </div>
     );
   }
 
-  // Sign In Form
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem', fontWeight: '800', color: '#1e293b', textAlign: 'center' }}>
-          🎮 Pitch Game Tracker
-        </h1>
-        <p style={{ color: '#64748b', marginBottom: '2rem', textAlign: 'center' }}>
-          Sign in to continue
-        </p>
-
-        {error && (
-          <div style={{ 
-            padding: '1rem', 
-            background: '#fee2e2', 
-            borderRadius: '8px', 
-            color: '#dc2626',
-            marginBottom: '1rem',
-            fontSize: '0.875rem'
-          }}>
-            {error}
-          </div>
-        )}
-
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '20px'
+    }}>
+      <div style={{
+        background: 'white',
+        padding: '40px',
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+        maxWidth: '400px',
+        width: '100%'
+      }}>
+        <h2 style={{ marginBottom: '24px', color: '#333', textAlign: 'center' }}>Pitch Game Tracker</h2>
+        
         <form onSubmit={handleSignIn}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
-            required
-            autoFocus
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
-            required
-          />
-          <button type="submit" style={buttonStyle} disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontWeight: '500' }}>
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '16px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
 
-        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontWeight: '500' }}>
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '16px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {error && (
+            <div style={{
+              padding: '12px',
+              background: '#fee',
+              border: '1px solid #fcc',
+              borderRadius: '6px',
+              color: '#c33',
+              marginBottom: '20px',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+
           <button
-            onClick={() => setShowResetForm(true)}
+            type="submit"
+            disabled={loading}
             style={{
-              background: 'none',
+              width: '100%',
+              padding: '12px',
+              background: loading ? '#ccc' : '#667eea',
+              color: 'white',
               border: 'none',
-              color: '#6366f1',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              textDecoration: 'underline'
+              borderRadius: '6px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              marginBottom: '16px'
             }}
           >
-            Forgot password?
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
-        </div>
 
-        <div style={{ 
-          marginTop: '2rem', 
-          padding: '1rem', 
-          background: '#f8fafc', 
-          borderRadius: '8px',
-          fontSize: '0.875rem',
-          color: '#64748b',
+          <div style={{ textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={() => setShowResetPassword(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#667eea',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                fontSize: '14px'
+              }}
+            >
+              Forgot password?
+            </button>
+          </div>
+        </form>
+
+        <div style={{
+          marginTop: '24px',
+          padding: '16px',
+          background: '#f8f9fa',
+          borderRadius: '6px',
+          fontSize: '14px',
+          color: '#666',
           textAlign: 'center'
         }}>
-          <strong>New user?</strong> Ask an admin to create your account.
+          Don't have an account? Contact your administrator to create one.
         </div>
       </div>
     </div>
