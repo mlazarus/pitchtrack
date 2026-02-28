@@ -3,255 +3,329 @@ import { supabase } from '../supabaseClient';
 
 const AdminPanel = ({ onClose, currentUserProfile }) => {
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // New user form
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
-  const [newUserName, setNewUserName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [newUserDisplayName, setNewUserDisplayName] = useState('');
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     loadUsers();
   }, []);
 
   const loadUsers = async () => {
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setUsers(data || []);
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      setUsers(data || []);
+    } catch (err) {
+      setError('Failed to load users: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const createUser = async (e) => {
+  const handleCreateUser = async (e) => {
     e.preventDefault();
-    
-    if (!newUserEmail || !newUserPassword) {
-      alert('Please enter email and password');
-      return;
-    }
-
-    if (newUserPassword.length < 6) {
-      alert('Password must be at least 6 characters');
-      return;
-    }
-
-    setLoading(true);
+    setError('');
+    setSuccess('');
+    setCreating(true);
 
     try {
-      // Call Supabase Edge Function to create user
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/create-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          email: newUserEmail,
-          password: newUserPassword,
-          display_name: newUserName || null
-        })
-      });
+      const response = await fetch(
+        'https://lhlnjggrljdgmytmoaqb.supabase.co/functions/v1/create-user',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: newUserEmail,
+            password: newUserPassword,
+            display_name: newUserDisplayName,
+          }),
+        }
+      );
 
-      const result = await response.json();
+      const data = await response.json();
 
-      if (response.ok) {
-        alert(`✅ User created successfully!\n\nEmail: ${newUserEmail}\nPassword: ${newUserPassword}\n\n⚠️ Copy these credentials and send them to the user before closing this dialog.`);
-        setNewUserEmail('');
-        setNewUserPassword('');
-        setNewUserName('');
-        loadUsers();
-      } else {
-        alert('Error: ' + (result.error || 'Failed to create user'));
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create user');
       }
-    } catch (err) {
-      alert('Error creating user: ' + err.message);
-    }
 
-    setLoading(false);
-  };
-
-  const toggleAdmin = async (userId, currentStatus, userEmail) => {
-    if (!confirm(`${currentStatus ? 'Remove' : 'Grant'} admin privileges for ${userEmail}?`)) return;
-
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({ is_admin: !currentStatus })
-      .eq('id', userId);
-
-    if (error) {
-      alert('Error updating admin status: ' + error.message);
-    } else {
+      setSuccess(`User created successfully! Credentials:\nEmail: ${newUserEmail}\nPassword: ${newUserPassword}`);
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserDisplayName('');
       loadUsers();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCreating(false);
     }
   };
 
-  const deleteUser = async (userId, email) => {
-    if (!confirm(`⚠️ Delete user "${email}"?\n\nThis will permanently delete:\n- Their account\n- Their profile\n\nThis cannot be undone.`)) return;
+  const handleToggleAdmin = async (userId, currentIsAdmin) => {
+    try {
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ is_admin: !currentIsAdmin })
+        .eq('id', userId);
+
+      if (updateError) throw updateError;
+      
+      setSuccess('User admin status updated');
+      loadUsers();
+    } catch (err) {
+      setError('Failed to update user: ' + err.message);
+    }
+  };
+
+  const handleDeleteUser = async (userId, userEmail) => {
+    if (!confirm(`Are you sure you want to delete ${userEmail}?`)) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/delete-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ user_id: userId })
-      });
+      const response = await fetch(
+        'https://lhlnjggrljdgmytmoaqb.supabase.co/functions/v1/delete-user',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ user_id: userId }),
+        }
+      );
 
-      if (response.ok) {
-        alert('✅ User deleted successfully');
-        loadUsers();
-      } else {
-        const result = await response.json();
-        alert('Error: ' + (result.error || 'Failed to delete user'));
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete user');
       }
+
+      setSuccess('User deleted successfully');
+      loadUsers();
     } catch (err) {
-      alert('Error deleting user: ' + err.message);
+      setError(err.message);
     }
   };
-
-  const modalStyle = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 9999
-  };
-
-  const panelStyle = {
-    background: 'white',
-    borderRadius: '16px',
-    padding: '2rem',
-    maxWidth: '900px',
-    width: '90%',
-    maxHeight: '90vh',
-    overflowY: 'auto'
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '0.5rem',
-    marginBottom: '0.5rem',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-    fontSize: '1rem'
-  };
-
-  const buttonStyle = (color = '#6366f1') => ({
-    padding: '0.5rem 1rem',
-    background: color,
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: '600'
-  });
 
   return (
-    <div style={modalStyle} onClick={onClose}>
-      <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>👨‍💼 Admin Panel - User Management</h2>
-
-        <div style={{ background: '#f1f5f9', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>Create New User</h3>
-          <form onSubmit={createUser}>
-            <input
-              type="text"
-              placeholder="Display Name (optional)"
-              value={newUserName}
-              onChange={(e) => setNewUserName(e.target.value)}
-              style={inputStyle}
-            />
-            <input
-              type="email"
-              placeholder="Email *"
-              value={newUserEmail}
-              onChange={(e) => setNewUserEmail(e.target.value)}
-              style={inputStyle}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Password (min 6 characters) *"
-              value={newUserPassword}
-              onChange={(e) => setNewUserPassword(e.target.value)}
-              style={inputStyle}
-              required
-              minLength={6}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ ...buttonStyle(), opacity: loading ? 0.5 : 1, width: '100%' }}
-            >
-              {loading ? 'Creating User...' : '✅ Create User'}
-            </button>
-          </form>
-          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
-            💡 <strong>Important:</strong> Copy the email and password from the success message and send them to the new user.
-          </p>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.7)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '12px',
+        maxWidth: '800px',
+        width: '100%',
+        maxHeight: '90vh',
+        overflow: 'auto',
+        padding: '32px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2 style={{ margin: 0, color: '#333' }}>Admin Panel</h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Close
+          </button>
         </div>
 
-        <h3 style={{ marginBottom: '1rem' }}>Existing Users ({users.length})</h3>
-        
-        {users.length === 0 ? (
-          <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>No users yet</p>
+        {error && (
+          <div style={{
+            padding: '12px',
+            background: '#fee',
+            border: '1px solid #fcc',
+            borderRadius: '6px',
+            color: '#c33',
+            marginBottom: '20px'
+          }}>
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div style={{
+            padding: '12px',
+            background: '#efe',
+            border: '1px solid #cfc',
+            borderRadius: '6px',
+            color: '#3c3',
+            marginBottom: '20px',
+            whiteSpace: 'pre-wrap'
+          }}>
+            {success}
+          </div>
+        )}
+
+        {/* Create User Form */}
+        <div style={{
+          padding: '20px',
+          background: '#f8f9fa',
+          borderRadius: '8px',
+          marginBottom: '32px'
+        }}>
+          <h3 style={{ marginTop: 0, marginBottom: '16px', color: '#333' }}>Create New User</h3>
+          <form onSubmit={handleCreateUser}>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontWeight: '500' }}>
+                Display Name
+              </label>
+              <input
+                type="text"
+                value={newUserDisplayName}
+                onChange={(e) => setNewUserDisplayName(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontWeight: '500' }}>
+                Email
+              </label>
+              <input
+                type="email"
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontWeight: '500' }}>
+                Password
+              </label>
+              <input
+                type="password"
+                value={newUserPassword}
+                onChange={(e) => setNewUserPassword(e.target.value)}
+                required
+                minLength={6}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={creating}
+              style={{
+                padding: '10px 20px',
+                background: creating ? '#ccc' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: creating ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              {creating ? 'Creating...' : 'Create User'}
+            </button>
+          </form>
+        </div>
+
+        {/* Users List */}
+        <h3 style={{ marginBottom: '16px', color: '#333' }}>Users</h3>
+        {loading ? (
+          <p>Loading users...</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#f1f5f9' }}>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700' }}>Name</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700' }}>Email</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700' }}>Admin</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700' }}>Created</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700' }}>Actions</th>
+                <tr style={{ background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                  <th style={{ padding: '12px', textAlign: 'left', color: '#555' }}>Name</th>
+                  <th style={{ padding: '12px', textAlign: 'left', color: '#555' }}>Email</th>
+                  <th style={{ padding: '12px', textAlign: 'center', color: '#555' }}>Admin</th>
+                  <th style={{ padding: '12px', textAlign: 'center', color: '#555' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(user => (
-                  <tr key={user.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '0.75rem' }}>{user.display_name || '-'}</td>
-                    <td style={{ padding: '0.75rem' }}>{user.email}</td>
-                    <td style={{ padding: '0.75rem' }}>
+                  <tr key={user.id} style={{ borderBottom: '1px solid #dee2e6' }}>
+                    <td style={{ padding: '12px' }}>{user.display_name || '—'}</td>
+                    <td style={{ padding: '12px' }}>{user.email}</td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      {user.is_admin ? '✓' : '—'}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
                       <button
-                        onClick={() => toggleAdmin(user.id, user.is_admin, user.email)}
+                        onClick={() => handleToggleAdmin(user.id, user.is_admin)}
+                        disabled={user.id === currentUserProfile?.id}
                         style={{
-                          padding: '0.25rem 0.5rem',
-                          background: user.is_admin ? '#10b981' : '#94a3b8',
+                          padding: '6px 12px',
+                          background: user.is_admin ? '#ffc107' : '#28a745',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem',
-                          fontWeight: '600'
+                          cursor: user.id === currentUserProfile?.id ? 'not-allowed' : 'pointer',
+                          fontSize: '12px',
+                          marginRight: '8px',
+                          opacity: user.id === currentUserProfile?.id ? 0.5 : 1
                         }}
                       >
-                        {user.is_admin ? '✅ Admin' : 'Make Admin'}
+                        {user.is_admin ? 'Remove Admin' : 'Make Admin'}
                       </button>
-                    </td>
-                    <td style={{ padding: '0.75rem', color: '#64748b' }}>
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </td>
-                    <td style={{ padding: '0.75rem' }}>
                       <button
-                        onClick={() => deleteUser(user.id, user.email)}
+                        onClick={() => handleDeleteUser(user.id, user.email)}
+                        disabled={user.id === currentUserProfile?.id}
                         style={{
-                          padding: '0.25rem 0.75rem',
-                          background: '#ef4444',
+                          padding: '6px 12px',
+                          background: '#dc3545',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem',
-                          fontWeight: '600'
+                          cursor: user.id === currentUserProfile?.id ? 'not-allowed' : 'pointer',
+                          fontSize: '12px',
+                          opacity: user.id === currentUserProfile?.id ? 0.5 : 1
                         }}
                       >
                         Delete
@@ -263,13 +337,6 @@ const AdminPanel = ({ onClose, currentUserProfile }) => {
             </table>
           </div>
         )}
-
-        <button
-          onClick={onClose}
-          style={{ ...buttonStyle('#64748b'), marginTop: '2rem' }}
-        >
-          Close
-        </button>
       </div>
     </div>
   );
