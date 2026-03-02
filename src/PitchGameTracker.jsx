@@ -200,6 +200,38 @@ export default function PitchGameTracker() {
     localStorage.setItem('showScoreDetail', showScoreDetail);
   }, [showScoreDetail]);
 
+  // Fetch all sets for date range (for Stats/Leaderboard tabs)
+  const fetchAllSetsForDateRange = async (startDate, endDate) => {
+    try {
+      const start = new Date(startDate + 'T00:00:00').toISOString();
+      const end = new Date(endDate + 'T23:59:59').toISOString();
+
+      const { data: sets, error } = await supabase
+        .from('sets')
+        .select('*')
+        .gte('completed_at', start)
+        .lte('completed_at', end)
+        .order('completed_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching sets:', error);
+        return [];
+      }
+
+      return sets?.map(s => ({
+        teamA: s.team_a_players,
+        teamB: s.team_b_players,
+        teamAScore: parseFloat(s.team_a_score),
+        teamBScore: parseFloat(s.team_b_score),
+        completed_at: s.completed_at,
+        table_number: s.table_number
+      })) || [];
+    } catch (err) {
+      console.error('Error:', err);
+      return [];
+    }
+  };
+
   useEffect(() => {
     const fetchLeaderboardData = async () => {
       const startDate = `${leaderboardYear}-01-01`;
@@ -208,7 +240,7 @@ export default function PitchGameTracker() {
       setLeaderboardSets(sets);
     };
     fetchLeaderboardData();
-  }, [leaderboardYear]);
+  }, [leaderboardYear, userProfile]);
 
   // =====================================================
   // CONDITIONAL RENDERS (Auth checks)
@@ -1112,38 +1144,6 @@ export default function PitchGameTracker() {
 
     // Start fresh game 1 of new set
     await startNewGame();
-  };
-
-  // Fetch all sets for date range (for Stats/Leaderboard tabs)
-  const fetchAllSetsForDateRange = async (startDate, endDate) => {
-    try {
-      const start = new Date(startDate + 'T00:00:00').toISOString();
-      const end = new Date(endDate + 'T23:59:59').toISOString();
-      
-      const { data: sets, error } = await supabase
-        .from('sets')
-        .select('*')
-        .gte('completed_at', start)
-        .lte('completed_at', end)
-        .order('completed_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching sets:', error);
-        return [];
-      }
-
-      return sets?.map(s => ({
-        teamA: s.team_a_players,
-        teamB: s.team_b_players,
-        teamAScore: parseFloat(s.team_a_score),
-        teamBScore: parseFloat(s.team_b_score),
-        completed_at: s.completed_at,
-        table_number: s.table_number
-      })) || [];
-    } catch (err) {
-      console.error('Error:', err);
-      return [];
-    }
   };
 
   // Calculate totals
