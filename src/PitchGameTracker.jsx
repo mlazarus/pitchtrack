@@ -688,6 +688,9 @@ export default function PitchGameTracker() {
     if (teamA.length === 2 && teamB.length === 3) fA *= 1.5;
     else if (teamB.length === 2 && teamA.length === 3) fB *= 1.5;
 
+    fA = Math.round(fA);
+    fB = Math.round(fB);
+
     return { scoreA: fA, scoreB: fB, bumpsA: bA, bumpsB: bB, runningA: tot.a, runningB: tot.b };
   };
 
@@ -732,7 +735,7 @@ export default function PitchGameTracker() {
     setCompletedGames([gr, ...completedGames]);
     const newSetGames = [...currentSetGames, gr];
     setCurrentSetGames(newSetGames);
-    showToast(`Game ${gameNumber} done! ${winner} wins $${Math.abs(winner === 'A' ? f.scoreA : f.scoreB).toFixed(1)}`);
+    showToast(`Game ${gameNumber} done! ${winner} wins $${Math.abs(winner === 'A' ? f.scoreA : f.scoreB)}`);
 
     // Check for set split after Game 2 (if different winner than Game 1)
     if (newSetGames.length === 2) {
@@ -1373,7 +1376,7 @@ export default function PitchGameTracker() {
                         <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[1]?.scoreA.toFixed(0) || '-'}</td>
                         <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[2]?.scoreA.toFixed(0) || '-'}</td>
                         <td style={{ padding: '0.75rem', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>
-                          {currentSetGames.length > 0 ? currentSetGames.reduce((sum, g) => sum + g.scoreA, 0).toFixed(1) : '-'}
+                          {currentSetGames.length > 0 ? currentSetGames.reduce((sum, g) => sum + g.scoreA, 0) : '-'}
                         </td>
                       </tr>
                       <tr style={{ background: '#0f172a' }}>
@@ -1383,7 +1386,7 @@ export default function PitchGameTracker() {
                         <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[1]?.scoreB.toFixed(0) || '-'}</td>
                         <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[2]?.scoreB.toFixed(0) || '-'}</td>
                         <td style={{ padding: '0.75rem', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>
-                          {currentSetGames.length > 0 ? currentSetGames.reduce((sum, g) => sum + g.scoreB, 0).toFixed(1) : '-'}
+                          {currentSetGames.length > 0 ? currentSetGames.reduce((sum, g) => sum + g.scoreB, 0) : '-'}
                         </td>
                       </tr>
                     </tbody>
@@ -1435,15 +1438,12 @@ export default function PitchGameTracker() {
                               });
 
                               setHistory.forEach(set => {
-                                const aMult = set.teamA.length < set.teamB.length ? 1.5 : 1;
-                                const bMult = set.teamB.length < set.teamA.length ? 1.5 : 1;
-                                
                                 allPlayers.forEach(p => {
                                   if (set.teamA.includes(p)) {
-                                    playerTotals[p] += set.teamAScore * aMult;
+                                    playerTotals[p] += set.teamAScore;
                                   }
                                   if (set.teamB.includes(p)) {
-                                    playerTotals[p] += set.teamBScore * bMult;
+                                    playerTotals[p] += set.teamBScore;
                                   }
                                 });
                               });
@@ -1452,7 +1452,7 @@ export default function PitchGameTracker() {
                                 const total = playerTotals[p];
                                 const color = total >= 0 ? '#10b981' : '#ef4444';
                                 return (
-                                  <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, color }}>{total.toFixed(1)}</th>
+                                  <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, color }}>{total}</th>
                                 );
                               });
                             })()}
@@ -1475,20 +1475,17 @@ export default function PitchGameTracker() {
                                 });
                               });
 
-                              const aMult = set.teamA.length < set.teamB.length ? 1.5 : 1;
-                              const bMult = set.teamB.length < set.teamA.length ? 1.5 : 1;
-
                               return (
                                 <tr key={idx} style={{ background: idx % 2 === 0 ? '#1e293b' : '#0f172a' }}>
                                   <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{setHistory.length - idx}</td>
                                   {allPlayers.map(p => {
                                     let val = 0;
-                                    if (set.teamA.includes(p)) val = set.teamAScore * aMult;
-                                    if (set.teamB.includes(p)) val = set.teamBScore * bMult;
+                                    if (set.teamA.includes(p)) val = set.teamAScore;
+                                    if (set.teamB.includes(p)) val = set.teamBScore;
                                     
                                     return (
                                       <td key={p} style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: val !== 0 ? '#6366f1' : '#64748b', fontWeight: val !== 0 ? '600' : '400' }}>
-                                        {val !== 0 ? `${val.toFixed(1)}` : '-'}
+                                        {val !== 0 ? `${val}` : '-'}
                                       </td>
                                     );
                                   })}
@@ -1588,9 +1585,9 @@ export default function PitchGameTracker() {
             {(() => {
               const filteredSets = leaderboardSets;
               if (filteredSets.length === 0) return <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#0f172a', borderRadius: '12px' }}><div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</div><p style={{ fontSize: '1.1rem' }}>No sets found for {leaderboardYear}</p></div>;
-              const playerStats = {}; filteredSets.forEach(set => { const aMult = set.teamA.length < set.teamB.length ? 1.5 : 1; const bMult = set.teamB.length < set.teamA.length ? 1.5 : 1; set.teamA.forEach(p => { if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 }; playerStats[p].sets++; const earnings = set.teamAScore * aMult; playerStats[p].totalEarnings += earnings; if (set.teamAScore > set.teamBScore) playerStats[p].wins++; else playerStats[p].losses++; }); set.teamB.forEach(p => { if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 }; playerStats[p].sets++; const earnings = set.teamBScore * bMult; playerStats[p].totalEarnings += earnings; if (set.teamBScore > set.teamAScore) playerStats[p].wins++; else playerStats[p].losses++; }); });
+              const playerStats = {}; filteredSets.forEach(set => { set.teamA.forEach(p => { if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 }; playerStats[p].sets++; playerStats[p].totalEarnings += set.teamAScore; if (set.teamAScore > set.teamBScore) playerStats[p].wins++; else playerStats[p].losses++; }); set.teamB.forEach(p => { if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 }; playerStats[p].sets++; playerStats[p].totalEarnings += set.teamBScore; if (set.teamBScore > set.teamAScore) playerStats[p].wins++; else playerStats[p].losses++; }); });
               const sortedPlayers = Object.keys(playerStats).sort((a, b) => playerStats[b].totalEarnings - playerStats[a].totalEarnings);
-              return <div><div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden' }}><div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr style={{ background: '#334155' }}><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Rank</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Player</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Sets</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Wins</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Losses</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Win %</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Total</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Avg/Set</th></tr></thead><tbody>{sortedPlayers.map((p, index) => { const stats = playerStats[p]; const winPct = ((stats.wins / stats.sets) * 100).toFixed(1); const avgPerSet = (stats.totalEarnings / stats.sets).toFixed(1); const earningsColor = stats.totalEarnings >= 0 ? '#10b981' : '#ef4444'; let rankDisplay = index + 1; if (index === 0) rankDisplay = '🥇'; else if (index === 1) rankDisplay = '🥈'; else if (index === 2) rankDisplay = '🥉'; return <tr key={p} style={{ background: index % 2 === 0 ? '#1e293b' : '#0f172a', borderBottom: '1px solid #334155' }}><td style={{ padding: '0.75rem', fontSize: '1.2rem' }}>{rankDisplay}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: '#e2e8f0' }}>{p}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{stats.sets}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#10b981', fontWeight: '600' }}>{stats.wins}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#ef4444', fontWeight: '600' }}>{stats.losses}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{winPct}%</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: earningsColor }}>{stats.totalEarnings.toFixed(1)}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{avgPerSet}</td></tr>; })}</tbody></table></div></div></div>;
+              return <div><div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden' }}><div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr style={{ background: '#334155' }}><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Rank</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Player</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Sets</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Wins</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Losses</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Win %</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Total</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Avg/Set</th></tr></thead><tbody>{sortedPlayers.map((p, index) => { const stats = playerStats[p]; const winPct = ((stats.wins / stats.sets) * 100).toFixed(1); const avgPerSet = Math.round(stats.totalEarnings / stats.sets); const earningsColor = stats.totalEarnings >= 0 ? '#10b981' : '#ef4444'; let rankDisplay = index + 1; if (index === 0) rankDisplay = '🥇'; else if (index === 1) rankDisplay = '🥈'; else if (index === 2) rankDisplay = '🥉'; return <tr key={p} style={{ background: index % 2 === 0 ? '#1e293b' : '#0f172a', borderBottom: '1px solid #334155' }}><td style={{ padding: '0.75rem', fontSize: '1.2rem' }}>{rankDisplay}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: '#e2e8f0' }}>{p}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{stats.sets}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#10b981', fontWeight: '600' }}>{stats.wins}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#ef4444', fontWeight: '600' }}>{stats.losses}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{winPct}%</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: earningsColor }}>{stats.totalEarnings}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{avgPerSet}</td></tr>; })}</tbody></table></div></div></div>;
             })()}
           </div>
         )}
@@ -1905,8 +1902,8 @@ export default function PitchGameTracker() {
               <h3 style={{ color: '#166534', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '700' }}>Team A</h3>
               {showScoreDetail ? (
                 <>
-                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Running:</strong> {wA.runningA.toFixed(1)}</p>
-                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Final:</strong> {wA.scoreA.toFixed(1)}</p>
+                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Running:</strong> {wA.runningA}</p>
+                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Final:</strong> {wA.scoreA}</p>
                   <p style={{ color: '#1e293b' }}><strong>Opp. Bumps:</strong> {wA.bumpsB}</p>
                 </>
               ) : (
@@ -1917,8 +1914,8 @@ export default function PitchGameTracker() {
               <h3 style={{ color: '#92400e', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '700' }}>Team B</h3>
               {showScoreDetail ? (
                 <>
-                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Running:</strong> {wB.runningB.toFixed(1)}</p>
-                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Final:</strong> {wB.scoreB.toFixed(1)}</p>
+                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Running:</strong> {wB.runningB}</p>
+                  <p style={{ color: '#1e293b', marginBottom: '0.25rem' }}><strong>Final:</strong> {wB.scoreB}</p>
                   <p style={{ color: '#1e293b' }}><strong>Opp. Bumps:</strong> {wB.bumpsA}</p>
                 </>
               ) : (
@@ -1978,7 +1975,7 @@ export default function PitchGameTracker() {
             return (
               <>
                 <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Team A wins: <strong>{aWins}</strong> | Team B wins: <strong>{bWins}</strong></p>
-                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Current total: Team A <strong>${stA.toFixed(1)}</strong> | Team B <strong>${stB.toFixed(1)}</strong></p>
+                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Current total: Team A <strong>${stA}</strong> | Team B <strong>${stB}</strong></p>
                 {willGetBonus && (
                   <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
                     ⭐ <strong>{aWins === 3 ? 'Team A' : 'Team B'} wins all 3 games! +${stakes.bonus} bonus</strong>
