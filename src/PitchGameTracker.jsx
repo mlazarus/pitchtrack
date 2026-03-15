@@ -699,8 +699,8 @@ export default function PitchGameTracker() {
       fA = -fB;
     }
 
-    if (teamA.length === 2 && teamB.length === 3) { fA *= 1.5; fB = -fA; }
-    else if (teamB.length === 2 && teamA.length === 3) { fB *= 1.5; fA = -fB; }
+    if (teamA.length === 2 && teamB.length === 3) { fA *= 1.5; }
+    else if (teamB.length === 2 && teamA.length === 3) { fB *= 1.5; }
 
     fA = Math.round(fA);
     fB = Math.round(fB);
@@ -1698,7 +1698,7 @@ export default function PitchGameTracker() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                   <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                  <span>4 (Captain 1.5x Fix)</span>
+                  <span>5 (Captain: 2-player 1.5x, 3-player 1x)</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                   <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
