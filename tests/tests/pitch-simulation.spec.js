@@ -57,7 +57,7 @@ async function selectTeams(page, teamA, teamB) {
   await page.getByRole('button', { name: 'players' }).click();
   await page.waitForTimeout(500);
 
-  const allPlayers = ['Fred', 'Joe', 'Larry', 'Sal', 'Floyd'];
+  const allPlayers = ['Fred', 'Joe', 'Larry', 'Sal', 'Floyd', 'Mark'];
 
   // Reset everyone to unassigned first
   for (const player of allPlayers) {
