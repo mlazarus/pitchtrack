@@ -136,7 +136,6 @@ describe('Core Scoring Rules', () => {
     expect(r.bumpsA).toBe(1);
     expect(r.bumpsB).toBe(0);
     // Winner B gets bA * bump = 1 * 1 = 1 added to base
-    expect(r.scoreB).toBe((2 + 1) + (4 * 0.5)); // 3 + 2 = 5 ... wait
     // totB=4, totA=10 → diff = 4-10 = negative → Math.max(0,...) = 0
     // base = 2 + (1 * 1) = 3, diff=0
     expect(r.scoreB).toBe(3);
