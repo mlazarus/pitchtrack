@@ -685,8 +685,8 @@ export default function PitchGameTracker() {
       fA = -fB;
     }
 
-    if (teamA.length === 2 && teamB.length === 3) fA *= 1.5;
-    else if (teamB.length === 2 && teamA.length === 3) fB *= 1.5;
+    if (teamA.length === 2 && teamB.length === 3) { fA *= 1.5; fB = -fA; }
+    else if (teamB.length === 2 && teamA.length === 3) { fB *= 1.5; fA = -fB; }
 
     fA = Math.round(fA);
     fB = Math.round(fB);
@@ -709,7 +709,7 @@ export default function PitchGameTracker() {
     await supabase
       .from('games')
       .update({
-        winner: winner === 'A' ? 'TeamA' : 'TeamB',
+        winner: winner,
         score_a: f.scoreA,
         score_b: f.scoreB,
         running_a: f.runningA,
