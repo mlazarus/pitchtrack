@@ -1679,11 +1679,11 @@ export default function PitchGameTracker() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                   <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                  <span>3 (React + Security)</span>
+                  <span>4 (Captain 1.5x Fix)</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                   <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
-                  <span>Feb 28, 2026</span>
+                  <span>Mar 15, 2026</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0' }}>
                   <span style={{ fontWeight: '600', color: '#94a3b8' }}>Description</span>
