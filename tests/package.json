@@ -1,0 +1,25 @@
+{
+  "name": "pitchtrack-tests",
+  "version": "1.0.0",
+  "description": "Tests for Pitch Game Tracker",
+  "scripts": {
+    "test": "playwright test",
+    "test:rules": "jest tests/pitch-rules.test.js --verbose",
+    "test:rules:watch": "jest tests/pitch-rules.test.js --watch",
+    "test:dataset1": "playwright test --grep 'dataset1'",
+    "test:dataset2": "playwright test --grep 'dataset2'",
+    "test:dataset3": "playwright test --grep 'dataset3'",
+    "test:verify": "playwright test --grep 'Verify scoring'",
+    "test:all": "npm run test:rules && playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.0",
+    "jest": "^29.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/*.test.js"]
+  }
+}

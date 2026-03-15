@@ -1,0 +1,9 @@
+node_modules/
+tests/node_modules/
+.env
+tests/.env
+.DS_Store
+test-results/
+playwright-report/
+tests/playwright-report/
+tests/test-results/

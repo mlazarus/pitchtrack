@@ -1,0 +1,98 @@
+name: Pitch Tracker Simulation Tests
+
+on:
+  # Manual trigger from GitHub UI (works from iPad!)
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: 'Which dataset to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - dataset1
+          - dataset2
+          - dataset3
+          - verify-only
+      headless:
+        description: 'Run headless (always true in CI)'
+        required: false
+        default: 'true'
+
+jobs:
+  test:
+    name: Run Pitch Simulation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install test dependencies
+        run: |
+          cd tests
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: Create results directory
+        run: mkdir -p tests/test-results
+
+      - name: Run simulation tests
+        run: |
+          cd tests
+          if [ "${{ github.event.inputs.dataset }}" = "all" ]; then
+            npx playwright test
+          elif [ "${{ github.event.inputs.dataset }}" = "verify-only" ]; then
+            npx playwright test --grep "Verify scoring"
+          else
+            npx playwright test --grep "${{ github.event.inputs.dataset }}"
+          fi
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: |
+            tests/playwright-report/
+            tests/test-results/
+          retention-days: 30
+
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failure-screenshots-${{ github.run_number }}
+          path: tests/test-results/*.png
+          retention-days: 7
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## 🃏 Pitch Tracker Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Dataset:** ${{ github.event.inputs.dataset }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f tests/test-results/results.json ]; then
+            node -e "
+              const r = require('./tests/test-results/results.json');
+              const passed = r.suites?.flatMap(s => s.specs).filter(s => s.ok).length || 0;
+              const failed = r.suites?.flatMap(s => s.specs).filter(s => !s.ok).length || 0;
+              console.log('✅ Passed: ' + passed);
+              console.log('❌ Failed: ' + failed);
+            " >> $GITHUB_STEP_SUMMARY
+          fi
