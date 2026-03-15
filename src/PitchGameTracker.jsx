@@ -96,6 +96,7 @@ export default function PitchGameTracker() {
   const [aboutTab, setAboutTab] = useState('info'); // 'info' or 'settings'
   const [debugLogging, setDebugLogging] = useState(true); // Toggle console logs
   const [showScoreDetail, setShowScoreDetail] = useState(false); // Toggle score detail in End Game modal
+  const [showCaptainBadge, setShowCaptainBadge] = useState(true); // Toggle captain game badge
   
   // Date filters
   const [leaderboardYear, setLeaderboardYear] = useState(today.getFullYear());
@@ -199,6 +200,19 @@ export default function PitchGameTracker() {
   useEffect(() => {
     localStorage.setItem('showScoreDetail', showScoreDetail);
   }, [showScoreDetail]);
+
+  // Load captain badge preference from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('showCaptainBadge');
+    if (saved !== null) {
+      setShowCaptainBadge(saved === 'true');
+    }
+  }, []);
+
+  // Save captain badge preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('showCaptainBadge', showCaptainBadge);
+  }, [showCaptainBadge]);
 
   // Fetch all sets for date range (for Stats/Leaderboard tabs)
   const fetchAllSetsForDateRange = async (startDate, endDate) => {
@@ -1290,7 +1304,12 @@ export default function PitchGameTracker() {
               <button onClick={() => setShowEndSessionModal(true)} style={buttonStyle('#8b5cf6')}>End Session</button>
             </div>
 
-            <h3 style={{ marginTop: '2rem', marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Scores</h3>
+            {showCaptainBadge && ((teamA.length === 2 && teamB.length === 3) || (teamB.length === 2 && teamA.length === 3)) && (
+              <div style={{ marginTop: '1.5rem', padding: '0.5rem 1rem', background: '#7c3aed', borderRadius: '8px', display: 'inline-block', fontWeight: '700', fontSize: '0.9rem', color: 'white' }}>
+                Captain Game — 1.5x
+              </div>
+            )}
+            <h3 style={{ marginTop: '1rem', marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Scores</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', border: '3px solid #10b981' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
@@ -1750,6 +1769,24 @@ export default function PitchGameTracker() {
                   </label>
                 </div>
 
+                {/* Captain Badge Toggle */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={showCaptainBadge}
+                      onChange={(e) => setShowCaptainBadge(e.target.checked)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '600' }}>Captain Game Badge</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        Show "Captain Game — 1.5x" badge when teams are 2 vs 3 players
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
                 {/* Admin Panel */}
                 {userProfile.is_admin && (
                   <div>
@@ -1926,29 +1963,29 @@ export default function PitchGameTracker() {
         </div>
         <p style={{ color: '#64748b', marginBottom: '1rem', fontWeight: '600' }}>Select the winning team:</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <button 
-            onClick={() => endGameWithWinner('A')} 
+          <button
+            onClick={() => endGameWithWinner('A')}
             disabled={wA.runningA < 9}
-            style={{ 
-              ...buttonStyle('#10b981'), 
+            style={{
+              ...buttonStyle('#10b981'),
               padding: '1rem',
               opacity: wA.runningA < 9 ? 0.5 : 1,
               cursor: wA.runningA < 9 ? 'not-allowed' : 'pointer'
             }}
           >
-            Team A Wins {wA.runningA < 9 ? '(Need 9+)' : ''}
+            Team A Wins {wA.runningA < 9 ? '(Need 9+)' : `→ $${Math.abs(wA.scoreA)}`}
           </button>
-          <button 
-            onClick={() => endGameWithWinner('B')} 
+          <button
+            onClick={() => endGameWithWinner('B')}
             disabled={wB.runningB < 9}
-            style={{ 
-              ...buttonStyle('#f59e0b'), 
+            style={{
+              ...buttonStyle('#f59e0b'),
               padding: '1rem',
               opacity: wB.runningB < 9 ? 0.5 : 1,
               cursor: wB.runningB < 9 ? 'not-allowed' : 'pointer'
             }}
           >
-            Team B Wins {wB.runningB < 9 ? '(Need 9+)' : ''}
+            Team B Wins {wB.runningB < 9 ? '(Need 9+)' : `→ $${Math.abs(wB.scoreB)}`}
           </button>
           <button onClick={() => setShowEndGameModal(false)} style={{ ...buttonStyle('#64748b'), padding: '1rem' }}>Cancel</button>
         </div>
