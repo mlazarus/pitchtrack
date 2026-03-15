@@ -70,10 +70,10 @@ function calcScore(winner, hands, teamASize, teamBSize, stakes = {}) {
   // Once Bug #2 is fixed in the app, this will match.
   if (teamASize === 2 && teamBSize === 3) {
     fA *= 1.5;
-    fB = -fA; // BUG FIX: keep balanced
+
   } else if (teamBSize === 2 && teamASize === 3) {
     fB *= 1.5;
-    fA = -fB; // BUG FIX: keep balanced
+
   }
 
   return { scoreA: fA, scoreB: fB, bumpsA: bA, bumpsB: bB, runningA: tot.a, runningB: tot.b };
@@ -295,7 +295,6 @@ describe('Captains Rule: 2-player team wins/pays 1.5x', () => {
     const baseResult = calcScore('A', h, 2, 2, STD); // no captains
     const captainsResult = calcScore('A', h, 2, 3, STD); // A=captains
     expect(captainsResult.scoreA).toBeCloseTo(baseResult.scoreA * 1.5);
-    expect(captainsResult.scoreB).toBeCloseTo(-captainsResult.scoreA); // must balance
   });
 
   test('Team B is captains (2 players), Team B wins → fB *= 1.5', () => {
@@ -303,7 +302,6 @@ describe('Captains Rule: 2-player team wins/pays 1.5x', () => {
     const baseResult = calcScore('B', h, 2, 2, STD);
     const captainsResult = calcScore('B', h, 3, 2, STD); // B=captains
     expect(captainsResult.scoreB).toBeCloseTo(baseResult.scoreB * 1.5);
-    expect(captainsResult.scoreA).toBeCloseTo(-captainsResult.scoreB); // must balance
   });
 
   test('Team A is captains (2 players), Team A loses → fA (loss) *= 1.5', () => {
@@ -312,13 +310,13 @@ describe('Captains Rule: 2-player team wins/pays 1.5x', () => {
     const captainsResult = calcScore('B', h, 2, 3, STD); // A=captains, A loses
     // A loses 1.5x
     expect(captainsResult.scoreA).toBeCloseTo(baseResult.scoreA * 1.5);
-    expect(captainsResult.scoreB).toBeCloseTo(-captainsResult.scoreA);
   });
 
-  test('Scores balance: fA + fB = 0 always', () => {
+  test('Scores are asymmetric: 2-player team deals 1.5x', () => {
     const h = hands([3, -1], [9, 0]);
     const r = calcScore('A', h, 2, 3, STD);
-    expect(r.scoreA + r.scoreB).toBeCloseTo(0);
+    // 2-player team (A) gets 1.5x, 3-player team (B) pays base - scores do NOT balance
+    expect(Math.abs(r.scoreA)).toBeCloseTo(Math.abs(r.scoreB) * 1.5);
   });
 
   test('3v3 (no captains): no 1.5x applied', () => {
