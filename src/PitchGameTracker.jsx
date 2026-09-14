@@ -3,6 +3,10 @@ import { supabase } from './supabaseClient';
 import AuthPage from './components/AuthPage';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import AdminPanel from './components/AdminPanel';
+import GameHeaderBar from './components/GameHeaderBar';
+import CurrentGameCard from './components/CurrentGameCard';
+import TotalSummaryTable from './components/TotalSummaryTable';
+import SetsTable from './components/SetsTable';
 
 // Toast notification component
 const Toast = ({ message, show }) => {
@@ -1255,269 +1259,39 @@ export default function PitchGameTracker() {
       {/* Content */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
         {activeTab === 'game' && (
-          <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-            <p style={{ marginBottom: '1rem' }}>
-              <strong>Current Dealer:</strong>{' '}
-              <span style={{ color: '#f59e0b', fontWeight: '600' }}>
-                {dealers.length > 0 && currentDealerIdx >= 0 ? dealers[currentDealerIdx] : 'Not selected'}
-              </span>
-            </p>
-
-            {dealers.length > 0 && (
-              <div style={{ margin: '1rem 0', padding: '1rem', background: '#0f172a', borderRadius: '12px', border: '2px solid #334155' }}>
-                <strong>Dealer Rotation:</strong>
-                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {dealers.map((d, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        background: i === currentDealerIdx ? '#6366f1' : '#334155',
-                        color: 'white',
-                        borderRadius: '8px',
-                        fontWeight: i === currentDealerIdx ? '700' : '400',
-                        fontSize: '0.9rem'
-                      }}
-                    >
-                      {i === currentDealerIdx ? '★ ' : ''}{d}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1.5rem' }}>
-              <button onClick={openScoreModal} style={buttonStyle('#6366f1')}>Add Score</button>
-              <button onClick={openDealerModal} style={buttonStyle('#10b981')}>Select Dealers</button>
-              <button onClick={openEndGameModal} style={buttonStyle('#ef4444')}>End Game</button>
-              <button 
-                onClick={() => setShowEndSetModal(true)} 
-                style={{
-                  ...buttonStyle('#f59e0b'),
-                  opacity: currentSetGames.length > 0 ? 1 : 0.5,
-                  cursor: currentSetGames.length > 0 ? 'pointer' : 'not-allowed'
-                }}
-                disabled={currentSetGames.length === 0}
-              >
-                End Set {currentSetGames.length > 0 ? `(${currentSetGames.length})` : '(0/3)'}
-              </button>
-              <button onClick={() => setShowEndSessionModal(true)} style={buttonStyle('#8b5cf6')}>End Session</button>
-            </div>
+          <div style={{ background: '#0b0e17', borderRadius: '14px', overflow: 'hidden', border: '1px solid #1e2230' }}>
+            <GameHeaderBar
+              currentTable={currentTable}
+              dealers={dealers}
+              currentDealerIdx={currentDealerIdx}
+              currentSetGamesCount={currentSetGames.length}
+              onOpenDealerFlow={openDealerModal}
+              onOpenAddScore={openScoreModal}
+              onEndGame={openEndGameModal}
+              onEndSet={() => setShowEndSetModal(true)}
+              onEndSession={() => setShowEndSessionModal(true)}
+            />
 
             {showCaptainBadge && ((teamA.length === 2 && teamB.length === 3) || (teamB.length === 2 && teamA.length === 3)) && (
-              <div style={{ marginTop: '1.5rem', padding: '0.5rem 1rem', background: '#7c3aed', borderRadius: '8px', display: 'inline-block', fontWeight: '700', fontSize: '0.9rem', color: 'white' }}>
+              <div style={{ margin: '16px 20px 0', padding: '0.5rem 1rem', background: '#7c3aed', borderRadius: '8px', display: 'inline-block', fontWeight: '700', fontSize: '0.9rem', color: 'white' }}>
                 Captain Game — 1.5x
               </div>
             )}
-            <h3 style={{ marginTop: '1rem', marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Scores</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', border: '3px solid #10b981' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <h4 style={{ margin: 0, color: '#10b981', fontSize: '1rem' }}>Team A</h4>
-                  <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>({teamA.join(', ') || 'No players'})</span>
-                </div>
-                <div style={{ fontSize: '3rem', fontWeight: '800', color: '#10b981' }}>{totA.toFixed(0)}</div>
-              </div>
-              <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', border: '3px solid #f59e0b' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <h4 style={{ margin: 0, color: '#f59e0b', fontSize: '1rem' }}>Team B</h4>
-                  <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>({teamB.join(', ') || 'No players'})</span>
-                </div>
-                <div style={{ fontSize: '3rem', fontWeight: '800', color: '#f59e0b' }}>{totB.toFixed(0)}</div>
-              </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', marginTop: '2rem' }}>
-              <div>
-                <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Hands</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', background: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
-                  <thead>
-                    <tr style={{ background: '#334155' }}>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Dealer</th>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>A</th>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>B</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hands.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>No hands yet</td>
-                      </tr>
-                    ) : (
-                      hands.map((h, idx) => {
-                        let rA = 0, rB = 0;
-                        for (let i = 0; i <= idx; i++) {
-                          rA += hands[i].scoreA;
-                          rB += hands[i].scoreB;
-                        }
-                        return (
-                          <tr
-                            key={idx}
-                            onClick={() => editHand(idx)}
-                            style={{
-                              cursor: 'pointer',
-                              background: idx % 2 === 0 ? '#1e293b' : '#0f172a',
-                              transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = '#334155'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = idx % 2 === 0 ? '#1e293b' : '#0f172a'}
-                          >
-                            <td style={{ padding: '0.5rem', fontSize: `${stakes.tableFontSize}rem` }}>{h.dealer}</td>
-                            <td style={{ padding: '0.5rem', fontSize: `${stakes.tableFontSize}rem`, color: '#10b981', fontWeight: '600' }}>{rA.toFixed(0)}</td>
-                            <td style={{ padding: '0.5rem', fontSize: `${stakes.tableFontSize}rem`, color: '#f59e0b', fontWeight: '600' }}>{rB.toFixed(0)}</td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <CurrentGameCard
+              dealers={dealers}
+              hands={hands}
+              teamA={teamA}
+              teamB={teamB}
+              totA={totA}
+              totB={totB}
+              currentDealerIdx={currentDealerIdx}
+              onEditHand={editHand}
+            />
 
-              <div>
-                <div style={{ marginBottom: '2rem' }}>
-                  <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Total Summary</h3>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', background: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
-                    <thead>
-                      <tr style={{ background: '#334155' }}>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Team</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Players</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Game 1</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Game 2</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Game 3</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr style={{ background: '#1e293b' }}>
-                        <td style={{ padding: '0.75rem', fontWeight: '600', fontSize: `${stakes.tableFontSize}rem` }}>A</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{teamA.join(', ') || '-'}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[0]?.scoreA.toFixed(0) || '-'}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[1]?.scoreA.toFixed(0) || '-'}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[2]?.scoreA.toFixed(0) || '-'}</td>
-                        <td style={{ padding: '0.75rem', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>
-                          {currentSetGames.length > 0 ? currentSetGames.reduce((sum, g) => sum + g.scoreA, 0) : '-'}
-                        </td>
-                      </tr>
-                      <tr style={{ background: '#0f172a' }}>
-                        <td style={{ padding: '0.75rem', fontWeight: '600', fontSize: `${stakes.tableFontSize}rem` }}>B</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{teamB.join(', ') || '-'}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[0]?.scoreB.toFixed(0) || '-'}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[1]?.scoreB.toFixed(0) || '-'}</td>
-                        <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{currentSetGames[2]?.scoreB.toFixed(0) || '-'}</td>
-                        <td style={{ padding: '0.75rem', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem` }}>
-                          {currentSetGames.length > 0 ? currentSetGames.reduce((sum, g) => sum + g.scoreB, 0) : '-'}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div>
-                  <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Sets</h3>
-                  <div style={{ border: '2px solid #334155', borderRadius: '8px', overflow: 'hidden' }}>
-                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                          <tr style={{ background: '#334155' }}>
-                            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem`, width: '80px' }}>Set #</th>
-                            {(() => {
-                              const allPlayers = [];
-                              setHistory.forEach(set => {
-                                set.teamA.forEach(p => {
-                                  if (!allPlayers.includes(p)) allPlayers.push(p);
-                                });
-                                set.teamB.forEach(p => {
-                                  if (!allPlayers.includes(p)) allPlayers.push(p);
-                                });
-                              });
-                              return allPlayers.map(p => (
-                                <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '700', fontSize: `${stakes.tableFontSize}rem`, minWidth: '120px' }}>{p}</th>
-                              ));
-                            })()}
-                          </tr>
-                          <tr style={{ background: '#334155', fontWeight: '700', position: 'sticky', top: '49px', zIndex: 9 }}>
-                            <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem` }}>Total</th>
-                            {(() => {
-                              const allPlayers = [];
-                              const playerTotals = {};
-                              
-                              setHistory.forEach(set => {
-                                set.teamA.forEach(p => {
-                                  if (!allPlayers.includes(p)) {
-                                    allPlayers.push(p);
-                                    playerTotals[p] = 0;
-                                  }
-                                });
-                                set.teamB.forEach(p => {
-                                  if (!allPlayers.includes(p)) {
-                                    allPlayers.push(p);
-                                    playerTotals[p] = 0;
-                                  }
-                                });
-                              });
-
-                              setHistory.forEach(set => {
-                                allPlayers.forEach(p => {
-                                  if (set.teamA.includes(p)) {
-                                    playerTotals[p] += set.teamAScore;
-                                  }
-                                  if (set.teamB.includes(p)) {
-                                    playerTotals[p] += set.teamBScore;
-                                  }
-                                });
-                              });
-
-                              return allPlayers.map(p => {
-                                const total = playerTotals[p];
-                                const color = total >= 0 ? '#10b981' : '#ef4444';
-                                return (
-                                  <th key={p} style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, color }}>{total}</th>
-                                );
-                              });
-                            })()}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {setHistory.length === 0 ? (
-                            <tr>
-                              <td colSpan={10} style={{ padding: '1rem', textAlign: 'center', color: '#64748b', background: '#0f172a' }}>No sets yet</td>
-                            </tr>
-                          ) : (
-                            setHistory.map((set, idx) => {
-                              const allPlayers = [];
-                              setHistory.forEach(s => {
-                                s.teamA.forEach(p => {
-                                  if (!allPlayers.includes(p)) allPlayers.push(p);
-                                });
-                                s.teamB.forEach(p => {
-                                  if (!allPlayers.includes(p)) allPlayers.push(p);
-                                });
-                              });
-
-                              return (
-                                <tr key={idx} style={{ background: idx % 2 === 0 ? '#1e293b' : '#0f172a' }}>
-                                  <td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem` }}>{setHistory.length - idx}</td>
-                                  {allPlayers.map(p => {
-                                    let val = 0;
-                                    if (set.teamA.includes(p)) val = set.teamAScore;
-                                    if (set.teamB.includes(p)) val = set.teamBScore;
-                                    
-                                    return (
-                                      <td key={p} style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: val !== 0 ? '#6366f1' : '#64748b', fontWeight: val !== 0 ? '600' : '400' }}>
-                                        {val !== 0 ? `${val}` : '-'}
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div style={{ padding: '22px 20px 20px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <TotalSummaryTable teamA={teamA} teamB={teamB} currentSetGames={currentSetGames} />
+              <SetsTable setHistory={setHistory} />
             </div>
           </div>
         )}
@@ -1698,15 +1472,11 @@ export default function PitchGameTracker() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
                   <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                  <span>5 (Captain: 2-player 1.5x, 3-player 1x)</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
-                  <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
-                  <span>Mar 15, 2026</span>
+                  <span>5 (Captain: 2-player 1.5x, 3-player 1x, New game screen design)</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0' }}>
-                  <span style={{ fontWeight: '600', color: '#94a3b8' }}>Description</span>
-                  <span>Multi-table pitch game scoring system</span>
+                  <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
+                  <span>Sep 14, 2026</span>
                 </div>
               </div>
             )}
