@@ -41,30 +41,31 @@ const colGroup = (
   </colgroup>
 );
 
-export default function CurrentGameCard({ theme = 'dark', dealers, hands, teamA, teamB, totA, totB, currentDealerIdx, onEditHand }) {
+export default function CurrentGameCard({ theme = 'dark', fontScale = 1, dealers, hands, teamA, teamB, totA, totB, currentDealerIdx, onEditHand }) {
   const c = THEMES[theme] || THEMES.dark;
+  const px = (n) => `${n * fontScale}px`;
   const [expanded, setExpanded] = useState(true);
 
   const upcomingDealer = dealers.length > 0 ? dealers[currentDealerIdx] : null;
 
   return (
     <div style={{ border: `1px solid ${c.cardBorder}`, borderRadius: '10px', overflow: 'hidden' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: px(12), tableLayout: 'fixed' }}>
         {colGroup}
         <thead>
           <tr style={{ background: c.headerBg }}>
-            <th style={{ textAlign: 'left', padding: '9px 14px', fontSize: '11px', fontWeight: 500, color: c.headerLabel }}>
+            <th style={{ textAlign: 'left', padding: '9px 14px', fontSize: px(11), fontWeight: 500, color: c.headerLabel }}>
               Dealer
             </th>
-            <th style={{ textAlign: 'right', padding: '9px 14px', fontSize: '10px', fontWeight: 500, color: TEAM_A_COLOR, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            <th style={{ textAlign: 'right', padding: '9px 14px', fontSize: px(10), fontWeight: 500, color: TEAM_A_COLOR, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
               <div>Team A</div>
-              <div style={{ fontSize: '11px', color: TEAM_A_SOFT, textTransform: 'none', fontWeight: 400, marginTop: '2px' }}>
+              <div style={{ fontSize: px(11), color: TEAM_A_SOFT, textTransform: 'none', fontWeight: 400, marginTop: '2px' }}>
                 {teamA.join(', ') || '—'}
               </div>
             </th>
-            <th style={{ textAlign: 'right', padding: '9px 14px', fontSize: '10px', fontWeight: 500, color: TEAM_B_COLOR, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            <th style={{ textAlign: 'right', padding: '9px 14px', fontSize: px(10), fontWeight: 500, color: TEAM_B_COLOR, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
               <div>Team B</div>
-              <div style={{ fontSize: '11px', color: TEAM_B_SOFT, textTransform: 'none', fontWeight: 400, marginTop: '2px' }}>
+              <div style={{ fontSize: px(11), color: TEAM_B_SOFT, textTransform: 'none', fontWeight: 400, marginTop: '2px' }}>
                 {teamB.join(', ') || '—'}
               </div>
             </th>
@@ -79,10 +80,10 @@ export default function CurrentGameCard({ theme = 'dark', dealers, hands, teamA,
               Total
               {expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
             </td>
-            <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: '18px', fontWeight: 500, fontFamily: 'ui-monospace, monospace', color: TEAM_A_COLOR }}>
+            <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: px(18), fontWeight: 500, fontFamily: 'ui-monospace, monospace', color: TEAM_A_COLOR }}>
               {totA.toFixed(0)}
             </td>
-            <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: '18px', fontWeight: 500, fontFamily: 'ui-monospace, monospace', color: TEAM_B_COLOR }}>
+            <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: px(18), fontWeight: 500, fontFamily: 'ui-monospace, monospace', color: TEAM_B_COLOR }}>
               {totB.toFixed(0)}
             </td>
           </tr>
@@ -91,7 +92,7 @@ export default function CurrentGameCard({ theme = 'dark', dealers, hands, teamA,
 
       {expanded && (
         <div style={{ borderTop: `1px solid ${c.detailBorder}` }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: px(12), tableLayout: 'fixed' }}>
             {colGroup}
             <tbody>
               {hands.length === 0 && !upcomingDealer && (

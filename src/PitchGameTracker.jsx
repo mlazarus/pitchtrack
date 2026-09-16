@@ -1185,6 +1185,7 @@ export default function PitchGameTracker() {
   const totA = hands.reduce((sum, h) => sum + h.scoreA, 0);
   const totB = hands.reduce((sum, h) => sum + h.scoreB, 0);
   const currentDealerIdx = dealers.length > 0 ? hands.length % dealers.length : -1;
+  const fontScale = stakes.tableFontSize / 0.9;
   const wA = calcScore('A');
   const wB = calcScore('B');
 
@@ -1302,6 +1303,7 @@ export default function PitchGameTracker() {
             <div style={{ padding: '16px 20px 20px', display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px', alignItems: 'start' }}>
               <CurrentGameCard
                 theme={lightTheme ? 'light' : 'dark'}
+                fontScale={fontScale}
                 dealers={dealers}
                 hands={hands}
                 teamA={teamA}
@@ -1313,8 +1315,8 @@ export default function PitchGameTracker() {
               />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                <TotalSummaryTable theme={lightTheme ? 'light' : 'dark'} teamA={teamA} teamB={teamB} currentSetGames={currentSetGames} />
-                <SetsTable theme={lightTheme ? 'light' : 'dark'} setHistory={setHistory} />
+                <TotalSummaryTable theme={lightTheme ? 'light' : 'dark'} fontScale={fontScale} teamA={teamA} teamB={teamB} currentSetGames={currentSetGames} />
+                <SetsTable theme={lightTheme ? 'light' : 'dark'} fontScale={fontScale} setHistory={setHistory} />
               </div>
             </div>
           </div>
@@ -1523,7 +1525,7 @@ export default function PitchGameTracker() {
                     style={inputStyle}
                   />
                   <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-                    Default: 0.9 | Range: 0.5-2.0
+                    Default: 0.9 | Range: 0.5-2.0 — scales text in the Leaderboard table and all Game screen tables (current game, total summary, sets)
                   </p>
                 </div>
 

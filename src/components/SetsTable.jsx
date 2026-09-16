@@ -1,7 +1,8 @@
 import React from 'react';
 
-export default function SetsTable({ theme = 'dark', setHistory }) {
+export default function SetsTable({ theme = 'dark', fontScale = 1, setHistory }) {
   const isLight = theme === 'light';
+  const px = (n) => `${n * fontScale}px`;
   const players = [];
   setHistory.forEach(set => {
     [...set.teamA, ...set.teamB].forEach(p => {
@@ -20,11 +21,11 @@ export default function SetsTable({ theme = 'dark', setHistory }) {
 
   return (
     <div>
-      <div style={{ fontSize: '13px', fontWeight: 500, color: isLight ? '#1a1a1a' : '#c7c9d4', marginBottom: '6px' }}>
+      <div style={{ fontSize: px(13), fontWeight: 500, color: isLight ? '#1a1a1a' : '#c7c9d4', marginBottom: '6px' }}>
         Sets <span style={{ color: isLight ? '#666666' : '#7d8091', fontWeight: 400 }}>· completed only</span>
       </div>
       <div style={{ border: `1px solid ${isLight ? '#b0b0b0' : '#2a2f42'}`, borderRadius: '6px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: px(12) }}>
           <thead>
             <tr style={{ background: '#3a4bb8' }}>
               <th style={{ textAlign: 'left', padding: '7px 10px', fontWeight: 500, color: '#fff' }}>Set</th>

@@ -13,8 +13,9 @@ function gameCell(index, completedGames, scoreKey) {
   return '–';
 }
 
-export default function TotalSummaryTable({ theme = 'dark', teamA, teamB, currentSetGames }) {
+export default function TotalSummaryTable({ theme = 'dark', fontScale = 1, teamA, teamB, currentSetGames }) {
   const isLight = theme === 'light';
+  const px = (n) => `${n * fontScale}px`;
   const inProgress = currentSetGames.length < GAME_COLUMNS;
   const inProgressGameNumber = currentSetGames.length + 1;
 
@@ -26,10 +27,10 @@ export default function TotalSummaryTable({ theme = 'dark', teamA, teamB, curren
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 500, color: isLight ? '#1a1a1a' : '#c7c9d4' }}>Total summary</span>
+        <span style={{ fontSize: px(13), fontWeight: 500, color: isLight ? '#1a1a1a' : '#c7c9d4' }}>Total summary</span>
         {inProgress && (
           <span style={{
-            fontSize: '10px',
+            fontSize: px(10),
             color: '#8a6a2a',
             background: isLight ? '#f5e8c8' : '#2a2308',
             padding: '2px 8px',
@@ -41,7 +42,7 @@ export default function TotalSummaryTable({ theme = 'dark', teamA, teamB, curren
         )}
       </div>
       <div style={{ border: `1px solid ${isLight ? '#b0b0b0' : '#2a2f42'}`, borderRadius: '6px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: px(12) }}>
           <thead>
             <tr style={{ background: '#3a4bb8' }}>
               <th style={{ textAlign: 'left', padding: '7px 10px', fontWeight: 500, color: '#fff' }}>Team</th>
