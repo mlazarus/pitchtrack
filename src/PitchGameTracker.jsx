@@ -1272,7 +1272,7 @@ export default function PitchGameTracker() {
       </div>
 
       {/* Content */}
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+      <div style={{ maxWidth: 'none', margin: '0 auto', padding: '2rem' }}>
         {activeTab === 'game' && (
           <div style={{
             background: lightTheme ? '#ffffff' : '#0b0e17',
@@ -1300,7 +1300,7 @@ export default function PitchGameTracker() {
               </div>
             )}
 
-            <div style={{ padding: '16px 20px 20px', display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px', alignItems: 'start' }}>
+            <div className="game-columns" style={{ padding: '16px 20px 20px', alignItems: 'start' }}>
               <CurrentGameCard
                 theme={lightTheme ? 'light' : 'dark'}
                 fontScale={fontScale}
@@ -1520,12 +1520,12 @@ export default function PitchGameTracker() {
                     value={stakes.tableFontSize}
                     onChange={(e) => setStakes({ ...stakes, tableFontSize: parseFloat(e.target.value) })}
                     min="0.5"
-                    max="2"
+                    max="3"
                     step="0.1"
                     style={inputStyle}
                   />
                   <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-                    Default: 0.9 | Range: 0.5-2.0 — scales text in the Leaderboard table and all Game screen tables (current game, total summary, sets)
+                    Default: 0.9 | Range: 0.5-3.0 — scales text in the Leaderboard table and all Game screen tables (current game, total summary, sets)
                   </p>
                 </div>
 

@@ -52,7 +52,7 @@ export default function TotalSummaryTable({ theme = 'dark', fontScale = 1, teamA
                   {i + 1}
                 </th>
               ))}
-              <th style={{ textAlign: 'right', padding: '7px 10px', fontWeight: 500, color: '#fff' }}>Total so far</th>
+              <th style={{ textAlign: 'right', padding: '7px 10px', fontWeight: 500, color: '#fff' }}>Current total</th>
             </tr>
           </thead>
           <tbody>
