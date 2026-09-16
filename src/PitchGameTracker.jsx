@@ -101,6 +101,7 @@ export default function PitchGameTracker() {
   const [debugLogging, setDebugLogging] = useState(true); // Toggle console logs
   const [showScoreDetail, setShowScoreDetail] = useState(false); // Toggle score detail in End Game modal
   const [showCaptainBadge, setShowCaptainBadge] = useState(true); // Toggle captain game badge
+  const [lightTheme, setLightTheme] = useState(false); // Toggle light classic theme for game screen
   
   // Date filters
   const [leaderboardYear, setLeaderboardYear] = useState(today.getFullYear());
@@ -217,6 +218,19 @@ export default function PitchGameTracker() {
   useEffect(() => {
     localStorage.setItem('showCaptainBadge', showCaptainBadge);
   }, [showCaptainBadge]);
+
+  // Load light theme preference from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('lightTheme');
+    if (saved !== null) {
+      setLightTheme(saved === 'true');
+    }
+  }, []);
+
+  // Save light theme preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('lightTheme', lightTheme);
+  }, [lightTheme]);
 
   // Fetch all sets for date range (for Stats/Leaderboard tabs)
   const fetchAllSetsForDateRange = async (startDate, endDate) => {
@@ -1259,9 +1273,16 @@ export default function PitchGameTracker() {
       {/* Content */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
         {activeTab === 'game' && (
-          <div style={{ background: '#0b0e17', borderRadius: '14px', overflow: 'hidden', border: '1px solid #1e2230' }}>
+          <div style={{
+            background: lightTheme ? '#ffffff' : '#0b0e17',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            border: `1px solid ${lightTheme ? '#c0c0c0' : '#1e2230'}`
+          }}>
             <GameHeaderBar
+              theme={lightTheme ? 'light' : 'dark'}
               currentTable={currentTable}
+              gameNumber={gameNumber}
               dealers={dealers}
               currentDealerIdx={currentDealerIdx}
               currentSetGamesCount={currentSetGames.length}
@@ -1278,20 +1299,23 @@ export default function PitchGameTracker() {
               </div>
             )}
 
-            <CurrentGameCard
-              dealers={dealers}
-              hands={hands}
-              teamA={teamA}
-              teamB={teamB}
-              totA={totA}
-              totB={totB}
-              currentDealerIdx={currentDealerIdx}
-              onEditHand={editHand}
-            />
+            <div style={{ padding: '16px 20px 20px', display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px', alignItems: 'start' }}>
+              <CurrentGameCard
+                theme={lightTheme ? 'light' : 'dark'}
+                dealers={dealers}
+                hands={hands}
+                teamA={teamA}
+                teamB={teamB}
+                totA={totA}
+                totB={totB}
+                currentDealerIdx={currentDealerIdx}
+                onEditHand={editHand}
+              />
 
-            <div style={{ padding: '22px 20px 20px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <TotalSummaryTable teamA={teamA} teamB={teamB} currentSetGames={currentSetGames} />
-              <SetsTable setHistory={setHistory} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <TotalSummaryTable theme={lightTheme ? 'light' : 'dark'} teamA={teamA} teamB={teamB} currentSetGames={currentSetGames} />
+                <SetsTable theme={lightTheme ? 'light' : 'dark'} setHistory={setHistory} />
+              </div>
             </div>
           </div>
         )}
@@ -1552,6 +1576,24 @@ export default function PitchGameTracker() {
                       <div style={{ fontWeight: '600' }}>Captain Game Badge</div>
                       <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                         Show "Captain Game — 1.5x" badge when teams are 2 vs 3 players
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Light Classic Theme Toggle */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={lightTheme}
+                      onChange={(e) => setLightTheme(e.target.checked)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '600' }}>Light Classic Theme</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        Show the game screen in a light, classic color scheme instead of dark
                       </div>
                     </div>
                   </label>
