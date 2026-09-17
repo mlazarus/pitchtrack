@@ -233,6 +233,12 @@ export default function PitchGameTracker() {
     localStorage.setItem('bgColor', bgColor);
   }, [bgColor]);
 
+  // Keep the actual browser canvas (outside the app's own content, e.g. on
+  // overscroll or a short viewport) in sync with the chosen background color
+  useEffect(() => {
+    document.body.style.background = bgColor;
+  }, [bgColor]);
+
   // Fetch all sets for date range (for Stats/Leaderboard tabs)
   const fetchAllSetsForDateRange = async (startDate, endDate) => {
     try {
