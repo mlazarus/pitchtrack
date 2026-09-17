@@ -1,45 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MenuIcon, CloseIcon, StarFilledIcon, UsersIcon, FlagIcon, SquareCheckIcon, LogoutIcon } from './icons';
 
-const THEMES = {
-  dark: {
-    bar: '#111420',
-    border: '#1e2230',
-    surface: '#20263c',
-    surfaceBorder: '#454d6e',
-    text: '#e8e9ed',
-    textDim: '#9aa0b4',
-    danger: '#f5a3a3',
-    disabled: '#6a7188',
-    indigo: '#5a55f0',
-    secondaryBg: '#1a1e2b',
-    secondaryBorder: '#2a2f42',
-    secondaryText: '#c7c9d4',
-    endGameBg: '#2a1c22',
-    endGameBorder: '#4a2f38'
-  },
-  light: {
-    bar: '#f5f5f0',
-    border: '#c0c0c0',
-    surface: '#ffffff',
-    surfaceBorder: '#999999',
-    text: '#1a1a1a',
-    textDim: '#555555',
-    danger: '#b91c1c',
-    disabled: '#999999',
-    indigo: '#3a4bb8',
-    secondaryBg: '#e8e8e8',
-    secondaryBorder: '#b0b0b0',
-    secondaryText: '#333333',
-    endGameBg: '#fdecec',
-    endGameBorder: '#e0a0a0'
-  }
-};
-
 export default function GameHeaderBar({
+  theme,
   currentTable,
   gameNumber,
-  theme = 'dark',
   dealers,
   currentDealerIdx,
   currentSetGamesCount,
@@ -49,7 +14,7 @@ export default function GameHeaderBar({
   onEndSet,
   onEndSession
 }) {
-  const c = THEMES[theme] || THEMES.dark;
+  const c = theme;
   const [menuOpen, setMenuOpen] = useState(false);
   const [dealersOpen, setDealersOpen] = useState(false);
   const menuRef = useRef(null);
@@ -108,8 +73,8 @@ export default function GameHeaderBar({
   };
 
   const primaryButtonStyle = {
-    background: c.indigo,
-    color: '#fff',
+    background: c.accent,
+    color: c.accentText,
     border: 'none',
     borderRadius: '7px',
     padding: '9px 18px',
@@ -119,9 +84,9 @@ export default function GameHeaderBar({
   };
 
   const endGameButtonStyle = {
-    background: c.endGameBg,
+    background: c.dangerBg,
     color: c.danger,
-    border: `1px solid ${c.endGameBorder}`,
+    border: `1px solid ${c.dangerBorder}`,
     borderRadius: '7px',
     padding: '9px 14px',
     fontSize: '13px',
@@ -134,7 +99,7 @@ export default function GameHeaderBar({
 
   const dropdownPanelStyle = {
     position: 'absolute',
-    background: c.surface,
+    background: c.surfaceBg,
     border: `1px solid ${c.surfaceBorder}`,
     borderRadius: '10px',
     padding: '8px',
@@ -164,8 +129,8 @@ export default function GameHeaderBar({
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '14px 20px',
-        background: c.bar,
-        border: `1px solid ${c.border}`,
+        background: c.panelBg2,
+        border: `1px solid ${c.panelBorder}`,
         borderBottom: 'none',
         borderRadius: '14px 14px 0 0'
       }}>
@@ -224,8 +189,8 @@ export default function GameHeaderBar({
                 <div
                   key={i}
                   style={{
-                    background: i === currentDealerIdx ? c.indigo : 'transparent',
-                    color: i === currentDealerIdx ? '#fff' : c.text,
+                    background: i === currentDealerIdx ? c.accent : 'transparent',
+                    color: i === currentDealerIdx ? c.accentText : c.text,
                     fontSize: '13px',
                     padding: '7px 8px',
                     borderRadius: '7px',

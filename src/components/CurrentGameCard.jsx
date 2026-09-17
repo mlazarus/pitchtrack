@@ -6,33 +6,6 @@ const TEAM_A_SOFT = '#9fe8bc';
 const TEAM_B_COLOR = '#f5b955';
 const TEAM_B_SOFT = '#f9d9a3';
 
-const THEMES = {
-  dark: {
-    cardBorder: '#2a2f42',
-    headerBg: '#1c2135',
-    headerLabel: '#9aa0b4',
-    totalRowBorder: '#262c42',
-    totalLabel: '#c7c9d4',
-    rowBorder: '#1a1e2b',
-    detailBorder: '#1e2230',
-    upcomingRowBg: '#161a28',
-    dealerName: '#e8edf5',
-    noHands: '#64748b'
-  },
-  light: {
-    cardBorder: '#b0b0b0',
-    headerBg: '#3a4bb8',
-    headerLabel: '#ffffff',
-    totalRowBorder: '#c0c0c0',
-    totalLabel: '#1a1a1a',
-    rowBorder: '#d8d8d8',
-    detailBorder: '#c0c0c0',
-    upcomingRowBg: '#eef1fb',
-    dealerName: '#1a1a1a',
-    noHands: '#777777'
-  }
-};
-
 const colGroup = (
   <colgroup>
     <col style={{ width: '22%' }} />
@@ -41,20 +14,20 @@ const colGroup = (
   </colgroup>
 );
 
-export default function CurrentGameCard({ theme = 'dark', fontScale = 1, dealers, hands, teamA, teamB, totA, totB, currentDealerIdx, onEditHand }) {
-  const c = THEMES[theme] || THEMES.dark;
+export default function CurrentGameCard({ theme, fontScale = 1, dealers, hands, teamA, teamB, totA, totB, currentDealerIdx, onEditHand }) {
+  const c = theme;
   const px = (n) => `${n * fontScale}px`;
   const [expanded, setExpanded] = useState(true);
 
   const upcomingDealer = dealers.length > 0 ? dealers[currentDealerIdx] : null;
 
   return (
-    <div style={{ border: `1px solid ${c.cardBorder}`, borderRadius: '10px', overflow: 'hidden' }}>
+    <div style={{ border: `1px solid ${c.panelBorder}`, borderRadius: '10px', overflow: 'hidden' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: px(12), tableLayout: 'fixed' }}>
         {colGroup}
         <thead>
-          <tr style={{ background: c.headerBg }}>
-            <th style={{ textAlign: 'left', padding: '9px 14px', fontSize: px(11), fontWeight: 500, color: c.headerLabel }}>
+          <tr style={{ background: c.panelBg2 }}>
+            <th style={{ textAlign: 'left', padding: '9px 14px', fontSize: px(11), fontWeight: 500, color: c.textDim }}>
               Dealer
             </th>
             <th style={{ textAlign: 'right', padding: '9px 14px', fontSize: px(10), fontWeight: 500, color: TEAM_A_COLOR, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
@@ -74,9 +47,9 @@ export default function CurrentGameCard({ theme = 'dark', fontScale = 1, dealers
         <tbody>
           <tr
             onClick={() => setExpanded(e => !e)}
-            style={{ cursor: 'pointer', borderTop: `1px solid ${c.totalRowBorder}` }}
+            style={{ cursor: 'pointer', borderTop: `1px solid ${c.panelBorder}`, background: c.panelBg }}
           >
-            <td style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '6px', color: c.totalLabel, fontWeight: 500, whiteSpace: 'nowrap' }}>
+            <td style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '6px', color: c.text, fontWeight: 500, whiteSpace: 'nowrap' }}>
               Total
               {expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
             </td>
@@ -91,13 +64,13 @@ export default function CurrentGameCard({ theme = 'dark', fontScale = 1, dealers
       </table>
 
       {expanded && (
-        <div style={{ borderTop: `1px solid ${c.detailBorder}` }}>
+        <div style={{ borderTop: `1px solid ${c.panelBorder}`, background: c.panelBg }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: px(12), tableLayout: 'fixed' }}>
             {colGroup}
             <tbody>
               {hands.length === 0 && !upcomingDealer && (
                 <tr>
-                  <td colSpan={3} style={{ padding: '12px 14px', textAlign: 'center', color: c.noHands }}>
+                  <td colSpan={3} style={{ padding: '12px 14px', textAlign: 'center', color: c.textDim }}>
                     No hands yet
                   </td>
                 </tr>
@@ -106,16 +79,16 @@ export default function CurrentGameCard({ theme = 'dark', fontScale = 1, dealers
                 <tr
                   key={idx}
                   onClick={() => onEditHand(idx)}
-                  style={{ borderTop: `1px solid ${c.rowBorder}`, cursor: 'pointer' }}
+                  style={{ borderTop: `1px solid ${c.panelBorder}`, cursor: 'pointer' }}
                 >
-                  <td style={{ padding: '8px 14px', color: c.dealerName }}>{h.dealer}</td>
+                  <td style={{ padding: '8px 14px', color: c.text }}>{h.dealer}</td>
                   <td style={{ padding: '8px 14px', textAlign: 'right', color: TEAM_A_COLOR }}>{h.scoreA}</td>
                   <td style={{ padding: '8px 14px', textAlign: 'right', color: TEAM_B_COLOR }}>{h.scoreB}</td>
                 </tr>
               ))}
               {upcomingDealer && (
-                <tr style={{ borderTop: `1px solid ${c.rowBorder}`, background: c.upcomingRowBg }}>
-                  <td style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', color: c.dealerName }}>
+                <tr style={{ borderTop: `1px solid ${c.panelBorder}`, background: c.rowAltBg }}>
+                  <td style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', color: c.text }}>
                     {upcomingDealer} <StarFilledIcon />
                   </td>
                   <td style={{ padding: '8px 14px', textAlign: 'right', color: TEAM_A_COLOR }}>–</td>

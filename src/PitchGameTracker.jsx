@@ -7,6 +7,7 @@ import GameHeaderBar from './components/GameHeaderBar';
 import CurrentGameCard from './components/CurrentGameCard';
 import TotalSummaryTable from './components/TotalSummaryTable';
 import SetsTable from './components/SetsTable';
+import { deriveTheme, DEFAULT_BG } from './theme';
 
 // Toast notification component
 const Toast = ({ message, show }) => {
@@ -101,7 +102,7 @@ export default function PitchGameTracker() {
   const [debugLogging, setDebugLogging] = useState(true); // Toggle console logs
   const [showScoreDetail, setShowScoreDetail] = useState(false); // Toggle score detail in End Game modal
   const [showCaptainBadge, setShowCaptainBadge] = useState(true); // Toggle captain game badge
-  const [lightTheme, setLightTheme] = useState(false); // Toggle light classic theme for game screen
+  const [bgColor, setBgColor] = useState(DEFAULT_BG); // User-selected app background color (rest of palette derives from this)
   
   // Date filters
   const [leaderboardYear, setLeaderboardYear] = useState(today.getFullYear());
@@ -219,18 +220,18 @@ export default function PitchGameTracker() {
     localStorage.setItem('showCaptainBadge', showCaptainBadge);
   }, [showCaptainBadge]);
 
-  // Load light theme preference from localStorage
+  // Load background color preference from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('lightTheme');
+    const saved = localStorage.getItem('bgColor');
     if (saved !== null) {
-      setLightTheme(saved === 'true');
+      setBgColor(saved);
     }
   }, []);
 
-  // Save light theme preference to localStorage
+  // Save background color preference to localStorage
   useEffect(() => {
-    localStorage.setItem('lightTheme', lightTheme);
-  }, [lightTheme]);
+    localStorage.setItem('bgColor', bgColor);
+  }, [bgColor]);
 
   // Fetch all sets for date range (for Stats/Leaderboard tabs)
   const fetchAllSetsForDateRange = async (startDate, endDate) => {
@@ -658,17 +659,6 @@ export default function PitchGameTracker() {
     setDealers([...tempDealers]);
     setShowDealerModal(false);
     showToast('Dealers set: ' + tempDealers.join(', '));
-  };
-
-  const resetDealers = () => {
-    if (dealers.length === 0) {
-      showToast('No dealers');
-      return;
-    }
-    if (window.confirm('Reset dealers?')) {
-      setDealers([]);
-      showToast('Dealers reset!');
-    }
   };
 
   const calcScore = (winner) => {
@@ -1186,16 +1176,17 @@ export default function PitchGameTracker() {
   const totB = hands.reduce((sum, h) => sum + h.scoreB, 0);
   const currentDealerIdx = dealers.length > 0 ? hands.length % dealers.length : -1;
   const fontScale = stakes.tableFontSize / 0.9;
+  const theme = deriveTheme(bgColor);
   const wA = calcScore('A');
   const wB = calcScore('B');
 
   return (
-    <div style={{ fontFamily: "'Manrope', 'Segoe UI', system-ui, sans-serif", background: '#0a0f1e', color: '#e8edf5', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Manrope', 'Segoe UI', system-ui, sans-serif", background: theme.pageBg, color: theme.text, minHeight: '100vh' }}>
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', padding: '1rem 2rem', borderBottom: '3px solid #4f46e5' }}>
+      <div style={{ background: theme.panelBg2, padding: '1rem 2rem', borderBottom: `3px solid ${theme.panelBorder}` }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.025em' }}>🎮 Pitch Game Tracker</h1>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.025em' }}>♠️♥️♦️♣️ Pitch Game Tracker</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <label style={{ fontWeight: '600', fontSize: '0.875rem' }}>Table:</label>
               <select
@@ -1204,9 +1195,9 @@ export default function PitchGameTracker() {
                 style={{
                   padding: '0.4rem 0.8rem',
                   borderRadius: '8px',
-                  border: '2px solid #4f46e5',
-                  background: 'white',
-                  color: '#1e293b',
+                  border: `2px solid ${theme.panelBorder}`,
+                  background: theme.surfaceBg,
+                  color: theme.text,
                   fontSize: '0.9rem',
                   fontWeight: '600',
                   cursor: 'pointer'
@@ -1219,7 +1210,7 @@ export default function PitchGameTracker() {
             </select>
           </div>
           </div>
-          
+
           {/* User Info & Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <strong style={{ fontSize: '0.9rem' }}>
@@ -1229,17 +1220,15 @@ export default function PitchGameTracker() {
               onClick={handleSignOut}
               style={{
                 padding: '0.5rem 1rem',
-                background: 'rgba(0,0,0,0.2)',
-                border: '2px solid rgba(255,255,255,0.3)',
+                background: theme.secondaryBg,
+                border: `2px solid ${theme.secondaryBorder}`,
                 borderRadius: '8px',
-                color: 'white',
+                color: theme.text,
                 cursor: 'pointer',
                 fontWeight: '600',
                 fontSize: '0.875rem',
                 transition: 'all 0.2s'
               }}
-              onMouseOver={(e) => e.target.style.background = 'rgba(0,0,0,0.3)'}
-              onMouseOut={(e) => e.target.style.background = 'rgba(0,0,0,0.2)'}
             >
               Sign Out
             </button>
@@ -1248,7 +1237,7 @@ export default function PitchGameTracker() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 2rem', borderBottom: '2px solid #1e293b', background: '#0f172a', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 2rem', borderBottom: `2px solid ${theme.panelBorder}`, background: theme.panelBg2, flexWrap: 'wrap' }}>
         {['game', 'players', 'leaderboard', 'settings', 'about'].map(tab => (
           <button
             key={tab}
@@ -1256,8 +1245,8 @@ export default function PitchGameTracker() {
             style={{
               padding: '0.75rem 1.5rem',
               border: 'none',
-              background: activeTab === tab ? '#6366f1' : 'transparent',
-              color: activeTab === tab ? 'white' : '#94a3b8',
+              background: activeTab === tab ? theme.accent : 'transparent',
+              color: activeTab === tab ? theme.accentText : theme.textDim,
               borderRadius: '8px',
               fontWeight: '700',
               fontSize: '0.95rem',
@@ -1275,13 +1264,13 @@ export default function PitchGameTracker() {
       <div style={{ maxWidth: 'none', margin: '0 auto', padding: '2rem' }}>
         {activeTab === 'game' && (
           <div style={{
-            background: lightTheme ? '#ffffff' : '#0b0e17',
+            background: theme.panelBg,
             borderRadius: '14px',
             overflow: 'hidden',
-            border: `1px solid ${lightTheme ? '#c0c0c0' : '#1e2230'}`
+            border: `1px solid ${theme.panelBorder}`
           }}>
             <GameHeaderBar
-              theme={lightTheme ? 'light' : 'dark'}
+              theme={theme}
               currentTable={currentTable}
               gameNumber={gameNumber}
               dealers={dealers}
@@ -1302,7 +1291,7 @@ export default function PitchGameTracker() {
 
             <div className="game-columns" style={{ padding: '16px 20px 20px', alignItems: 'start' }}>
               <CurrentGameCard
-                theme={lightTheme ? 'light' : 'dark'}
+                theme={theme}
                 fontScale={fontScale}
                 dealers={dealers}
                 hands={hands}
@@ -1315,16 +1304,16 @@ export default function PitchGameTracker() {
               />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                <TotalSummaryTable theme={lightTheme ? 'light' : 'dark'} fontScale={fontScale} teamA={teamA} teamB={teamB} currentSetGames={currentSetGames} />
-                <SetsTable theme={lightTheme ? 'light' : 'dark'} fontScale={fontScale} setHistory={setHistory} />
+                <TotalSummaryTable theme={theme} fontScale={fontScale} teamA={teamA} teamB={teamB} currentSetGames={currentSetGames} />
+                <SetsTable theme={theme} fontScale={fontScale} setHistory={setHistory} />
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'players' && (
-          <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-            <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>Manage Players</h2>
+          <div style={{ background: theme.panelBg, borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', border: `1px solid ${theme.panelBorder}` }}>
+            <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>Players</h2>
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
               <input
                 type="text"
@@ -1335,20 +1324,19 @@ export default function PitchGameTracker() {
                 style={{
                   flex: 1,
                   padding: '0.75rem',
-                  border: '2px solid #334155',
+                  border: `2px solid ${theme.panelBorder}`,
                   borderRadius: '8px',
-                  background: '#0f172a',
-                  color: '#e8edf5',
+                  background: theme.panelBg2,
+                  color: theme.text,
                   fontSize: '1rem'
                 }}
                 onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
               />
-              <button onClick={addPlayer} style={buttonStyle('#6366f1')}>Add Player</button>
+              <button onClick={addPlayer} style={buttonStyle(theme.accent)}>Add Player</button>
             </div>
 
-            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '700' }}>Players</h3>
             {players.length === 0 ? (
-              <p style={{ color: '#64748b' }}>No players yet. Add one above!</p>
+              <p style={{ color: theme.textDim }}>No players yet. Add one above!</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {players.map(p => {
@@ -1362,14 +1350,12 @@ export default function PitchGameTracker() {
                         display: 'flex',
                         justifyContent: 'space-between',
                         padding: '1rem',
-                        background: '#0f172a',
+                        background: theme.panelBg2,
                         borderRadius: '8px',
                         cursor: 'pointer',
-                        border: '2px solid #334155',
+                        border: `2px solid ${theme.panelBorder}`,
                         transition: 'all 0.2s'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#6366f1'}
-                      onMouseLeave={(e) => e.currentTarget.style.borderColor = '#334155'}
                     >
                       <span style={{ fontWeight: '600' }}>{p}</span>
                       {inA && <span style={{ padding: '0.25rem 0.75rem', borderRadius: '12px', background: '#10b981', color: 'white', fontSize: '0.75rem', fontWeight: '700' }}>Team A</span>}
@@ -1379,7 +1365,7 @@ export default function PitchGameTracker() {
                 })}
               </div>
             )}
-            <p style={{ marginTop: '1rem', color: '#64748b', fontSize: '0.875rem' }}>
+            <p style={{ marginTop: '1rem', color: theme.textDim, fontSize: '0.875rem' }}>
               Click: None → Team A → Team B → None
             </p>
           </div>
@@ -1387,14 +1373,14 @@ export default function PitchGameTracker() {
 
 
         {activeTab === 'leaderboard' && (
-          <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+          <div style={{ background: theme.panelBg, borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', border: `1px solid ${theme.panelBorder}` }}>
             <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>🏆 Player Leaderboard</h2>
-            <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <label style={{ fontWeight: '600', color: '#94a3b8', fontSize: '0.875rem' }}>Year:</label>
+            <div style={{ background: theme.panelBg2, padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <label style={{ fontWeight: '600', color: theme.textDim, fontSize: '0.875rem' }}>Year:</label>
               <select
                 value={leaderboardYear}
                 onChange={(e) => setLeaderboardYear(parseInt(e.target.value))}
-                style={{ ...inputStyle, width: 'auto', padding: '0.5rem 1rem' }}
+                style={{ ...inputStyle(theme), width: 'auto', padding: '0.5rem 1rem' }}
               >
                 {Array.from({ length: 5 }, (_, i) => today.getFullYear() - i).map(y => (
                   <option key={y} value={y}>{y}</option>
@@ -1403,15 +1389,82 @@ export default function PitchGameTracker() {
             </div>
             {(() => {
               const filteredSets = leaderboardSets;
-              if (filteredSets.length === 0) return <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#0f172a', borderRadius: '12px' }}><div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</div><p style={{ fontSize: '1.1rem' }}>No sets found for {leaderboardYear}</p></div>;
-              const playerStats = {}; filteredSets.forEach(set => { set.teamA.forEach(p => { if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 }; playerStats[p].sets++; playerStats[p].totalEarnings += set.teamAScore; if (set.teamAScore > set.teamBScore) playerStats[p].wins++; else playerStats[p].losses++; }); set.teamB.forEach(p => { if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 }; playerStats[p].sets++; playerStats[p].totalEarnings += set.teamBScore; if (set.teamBScore > set.teamAScore) playerStats[p].wins++; else playerStats[p].losses++; }); });
+              if (filteredSets.length === 0) {
+                return (
+                  <div style={{ padding: '3rem', textAlign: 'center', color: theme.textDim, background: theme.panelBg2, borderRadius: '12px' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</div>
+                    <p style={{ fontSize: '1.1rem' }}>No sets found for {leaderboardYear}</p>
+                  </div>
+                );
+              }
+
+              const playerStats = {};
+              filteredSets.forEach(set => {
+                set.teamA.forEach(p => {
+                  if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 };
+                  playerStats[p].sets++;
+                  playerStats[p].totalEarnings += set.teamAScore;
+                  if (set.teamAScore > set.teamBScore) playerStats[p].wins++; else playerStats[p].losses++;
+                });
+                set.teamB.forEach(p => {
+                  if (!playerStats[p]) playerStats[p] = { sets: 0, wins: 0, losses: 0, totalEarnings: 0 };
+                  playerStats[p].sets++;
+                  playerStats[p].totalEarnings += set.teamBScore;
+                  if (set.teamBScore > set.teamAScore) playerStats[p].wins++; else playerStats[p].losses++;
+                });
+              });
               const sortedPlayers = Object.keys(playerStats).sort((a, b) => playerStats[b].totalEarnings - playerStats[a].totalEarnings);
-              return <div><div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden' }}><div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr style={{ background: '#334155' }}><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Rank</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Player</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Sets</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Wins</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Losses</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Win %</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Total</th><th style={{ padding: '0.75rem', textAlign: 'left', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700' }}>Avg/Set</th></tr></thead><tbody>{sortedPlayers.map((p, index) => { const stats = playerStats[p]; const winPct = ((stats.wins / stats.sets) * 100).toFixed(1); const avgPerSet = Math.round(stats.totalEarnings / stats.sets); const earningsColor = stats.totalEarnings >= 0 ? '#10b981' : '#ef4444'; let rankDisplay = index + 1; if (index === 0) rankDisplay = '🥇'; else if (index === 1) rankDisplay = '🥈'; else if (index === 2) rankDisplay = '🥉'; return <tr key={p} style={{ background: index % 2 === 0 ? '#1e293b' : '#0f172a', borderBottom: '1px solid #334155' }}><td style={{ padding: '0.75rem', fontSize: '1.2rem' }}>{rankDisplay}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: '#e2e8f0' }}>{p}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{stats.sets}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#10b981', fontWeight: '600' }}>{stats.wins}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#ef4444', fontWeight: '600' }}>{stats.losses}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{winPct}%</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, fontWeight: '700', color: earningsColor }}>{stats.totalEarnings}</td><td style={{ padding: '0.75rem', fontSize: `${stakes.tableFontSize}rem`, color: '#94a3b8' }}>{avgPerSet}</td></tr>; })}</tbody></table></div></div></div>;
+              const lbFontSize = `${stakes.tableFontSize}rem`;
+
+              return (
+                <div style={{ background: theme.panelBg2, borderRadius: '12px', overflow: 'hidden' }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ background: theme.accent }}>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: lbFontSize, fontWeight: '700', color: theme.accentText }}>Rank</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: lbFontSize, fontWeight: '700', color: theme.accentText }}>Player</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: lbFontSize, fontWeight: '700', color: theme.accentText }}>Sets</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: lbFontSize, fontWeight: '700', color: theme.accentText }}>Wins</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: lbFontSize, fontWeight: '700', color: theme.accentText }}>Losses</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: lbFontSize, fontWeight: '700', color: theme.accentText }}>Win %</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: lbFontSize, fontWeight: '700', color: theme.accentText }}>Total</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: lbFontSize, fontWeight: '700', color: theme.accentText }}>Avg/Set</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedPlayers.map((p, index) => {
+                          const stats = playerStats[p];
+                          const winPct = ((stats.wins / stats.sets) * 100).toFixed(1);
+                          const avgPerSet = Math.round(stats.totalEarnings / stats.sets);
+                          const earningsColor = stats.totalEarnings >= 0 ? '#10b981' : '#ef4444';
+                          let rankDisplay = index + 1;
+                          if (index === 0) rankDisplay = '🥇';
+                          else if (index === 1) rankDisplay = '🥈';
+                          else if (index === 2) rankDisplay = '🥉';
+                          return (
+                            <tr key={p} style={{ background: index % 2 === 0 ? theme.panelBg : theme.rowAltBg, borderBottom: `1px solid ${theme.panelBorder}` }}>
+                              <td style={{ padding: '0.75rem', fontSize: '1.2rem' }}>{rankDisplay}</td>
+                              <td style={{ padding: '0.75rem', fontSize: lbFontSize, fontWeight: '700', color: theme.text }}>{p}</td>
+                              <td style={{ padding: '0.75rem', fontSize: lbFontSize, color: theme.textDim }}>{stats.sets}</td>
+                              <td style={{ padding: '0.75rem', fontSize: lbFontSize, color: '#10b981', fontWeight: '600' }}>{stats.wins}</td>
+                              <td style={{ padding: '0.75rem', fontSize: lbFontSize, color: '#ef4444', fontWeight: '600' }}>{stats.losses}</td>
+                              <td style={{ padding: '0.75rem', fontSize: lbFontSize, color: theme.textDim }}>{winPct}%</td>
+                              <td style={{ padding: '0.75rem', fontSize: lbFontSize, fontWeight: '700', color: earningsColor }}>{stats.totalEarnings}</td>
+                              <td style={{ padding: '0.75rem', fontSize: lbFontSize, color: theme.textDim }}>{avgPerSet}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
             })()}
           </div>
         )}
         {activeTab === 'settings' && (
-          <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+          <div style={{ background: theme.panelBg, borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', border: `1px solid ${theme.panelBorder}` }}>
             <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>Settings - Stakes</h2>
             <div style={{ display: 'grid', gap: '1rem', maxWidth: '400px' }}>
               <div>
@@ -1422,7 +1475,7 @@ export default function PitchGameTracker() {
                   onChange={(e) => setStakes({ ...stakes, gameScore: parseFloat(e.target.value) })}
                   min="0"
                   step="1"
-                  style={inputStyle}
+                  style={inputStyle(theme)}
                 />
               </div>
               <div>
@@ -1433,7 +1486,7 @@ export default function PitchGameTracker() {
                   onChange={(e) => setStakes({ ...stakes, bump: parseFloat(e.target.value) })}
                   min="0"
                   step="1"
-                  style={inputStyle}
+                  style={inputStyle(theme)}
                 />
               </div>
               <div>
@@ -1444,7 +1497,7 @@ export default function PitchGameTracker() {
                   onChange={(e) => setStakes({ ...stakes, points: parseFloat(e.target.value) })}
                   min="0"
                   step="0.5"
-                  style={inputStyle}
+                  style={inputStyle(theme)}
                 />
               </div>
               <div>
@@ -1455,26 +1508,27 @@ export default function PitchGameTracker() {
                   onChange={(e) => setStakes({ ...stakes, bonus: parseFloat(e.target.value) })}
                   min="0"
                   step="1"
-                  style={inputStyle}
+                  style={inputStyle(theme)}
                 />
               </div>
-              <button onClick={saveStakes} style={buttonStyle('#6366f1')}>Save Settings</button>
+              <button onClick={saveStakes} style={buttonStyle(theme.accent)}>Save Settings</button>
             </div>
           </div>
         )}
 
         {activeTab === 'about' && (
-          <div style={{ background: '#1e293b', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+          <div style={{ background: theme.panelBg, borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', border: `1px solid ${theme.panelBorder}` }}>
             <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', fontWeight: '700' }}>About Pitch Game Tracker</h2>
-            
+
             {/* About Sub-Tabs */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '2px solid #334155' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: `2px solid ${theme.panelBorder}` }}>
               <button
                 onClick={() => setAboutTab('info')}
                 style={{
-                  ...buttonStyle(aboutTab === 'info' ? '#6366f1' : '#475569'),
+                  ...buttonStyle(aboutTab === 'info' ? theme.accent : theme.secondaryBg),
+                  color: aboutTab === 'info' ? theme.accentText : theme.secondaryText,
                   borderRadius: '8px 8px 0 0',
-                  borderBottom: aboutTab === 'info' ? '3px solid #6366f1' : 'none',
+                  borderBottom: aboutTab === 'info' ? `3px solid ${theme.accent}` : 'none',
                   marginBottom: '-2px'
                 }}
               >
@@ -1483,9 +1537,10 @@ export default function PitchGameTracker() {
               <button
                 onClick={() => setAboutTab('settings')}
                 style={{
-                  ...buttonStyle(aboutTab === 'settings' ? '#6366f1' : '#475569'),
+                  ...buttonStyle(aboutTab === 'settings' ? theme.accent : theme.secondaryBg),
+                  color: aboutTab === 'settings' ? theme.accentText : theme.secondaryText,
                   borderRadius: '8px 8px 0 0',
-                  borderBottom: aboutTab === 'settings' ? '3px solid #6366f1' : 'none',
+                  borderBottom: aboutTab === 'settings' ? `3px solid ${theme.accent}` : 'none',
                   marginBottom: '-2px'
                 }}
               >
@@ -1496,13 +1551,13 @@ export default function PitchGameTracker() {
             {/* Info Tab */}
             {aboutTab === 'info' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #334155' }}>
-                  <span style={{ fontWeight: '600', color: '#94a3b8' }}>Version</span>
-                  <span>5 (Captain: 2-player 1.5x, 3-player 1x, New game screen design)</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: `1px solid ${theme.panelBorder}` }}>
+                  <span style={{ fontWeight: '600', color: theme.textDim }}>Version</span>
+                  <span>5 (Captain: 2-player 1.5x, 3-player 1x, New game screen design, Custom color theme)</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0' }}>
-                  <span style={{ fontWeight: '600', color: '#94a3b8' }}>Last Updated</span>
-                  <span>Sep 14, 2026</span>
+                  <span style={{ fontWeight: '600', color: theme.textDim }}>Last Updated</span>
+                  <span>{new Date(__BUILD_DATE__).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
               </div>
             )}
@@ -1522,9 +1577,9 @@ export default function PitchGameTracker() {
                     min="0.5"
                     max="3"
                     step="0.1"
-                    style={inputStyle}
+                    style={inputStyle(theme)}
                   />
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                  <p style={{ fontSize: '0.75rem', color: theme.textDim, marginTop: '0.25rem' }}>
                     Default: 0.9 | Range: 0.5-3.0 — scales text in the Leaderboard table and all Game screen tables (current game, total summary, sets)
                   </p>
                 </div>
@@ -1540,7 +1595,7 @@ export default function PitchGameTracker() {
                     />
                     <div>
                       <div style={{ fontWeight: '600' }}>Debug Logging</div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      <div style={{ fontSize: '0.75rem', color: theme.textDim }}>
                         Show detailed console logs for troubleshooting
                       </div>
                     </div>
@@ -1558,7 +1613,7 @@ export default function PitchGameTracker() {
                     />
                     <div>
                       <div style={{ fontWeight: '600' }}>Score Detail</div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      <div style={{ fontSize: '0.75rem', color: theme.textDim }}>
                         Show running total, final score, and bumps when ending a game
                       </div>
                     </div>
@@ -1576,29 +1631,36 @@ export default function PitchGameTracker() {
                     />
                     <div>
                       <div style={{ fontWeight: '600' }}>Captain Game Badge</div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      <div style={{ fontSize: '0.75rem', color: theme.textDim }}>
                         Show "Captain Game — 1.5x" badge when teams are 2 vs 3 players
                       </div>
                     </div>
                   </label>
                 </div>
 
-                {/* Light Classic Theme Toggle */}
+                {/* Background Color Picker */}
                 <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={lightTheme}
-                      onChange={(e) => setLightTheme(e.target.checked)}
-                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                    />
-                    <div>
-                      <div style={{ fontWeight: '600' }}>Light Classic Theme</div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                        Show the game screen in a light, classic color scheme instead of dark
-                      </div>
-                    </div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                    App Background Color
                   </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <input
+                      type="color"
+                      value={theme.baseHex}
+                      onChange={(e) => setBgColor(e.target.value)}
+                      style={{ width: '48px', height: '40px', padding: '2px', border: `2px solid ${theme.panelBorder}`, borderRadius: '8px', cursor: 'pointer', background: 'transparent' }}
+                    />
+                    <span style={{ fontFamily: 'ui-monospace, monospace', color: theme.textDim }}>{theme.baseHex}</span>
+                    <button
+                      onClick={() => setBgColor(DEFAULT_BG)}
+                      style={{ ...buttonStyle(theme.secondaryBg), color: theme.secondaryText, padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                    >
+                      Reset to default
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: theme.textDim, marginTop: '0.5rem' }}>
+                    Pick any color — every other color on every screen (panels, borders, buttons, tabs) is automatically matched to it.
+                  </p>
                 </div>
 
                 {/* Admin Panel */}
@@ -1621,7 +1683,7 @@ export default function PitchGameTracker() {
                     >
                       👨‍💼 Admin Panel
                     </button>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: theme.textDim, marginTop: '0.25rem' }}>
                       Manage users and system settings
                     </p>
                   </div>
@@ -1675,7 +1737,7 @@ export default function PitchGameTracker() {
             value={scoreA}
             onChange={(e) => setScoreA(e.target.value)}
             step="0.5"
-            style={{ ...inputStyle, background: 'white', color: '#1e293b', border: '2px solid #e2e8f0' }}
+            style={{ ...inputStyle(theme), background: 'white', color: '#1e293b', border: '2px solid #e2e8f0' }}
             autoFocus
           />
         </div>
@@ -1686,11 +1748,11 @@ export default function PitchGameTracker() {
             value={scoreB}
             onChange={(e) => setScoreB(e.target.value)}
             step="0.5"
-            style={{ ...inputStyle, background: 'white', color: '#1e293b', border: '2px solid #e2e8f0' }}
+            style={{ ...inputStyle(theme), background: 'white', color: '#1e293b', border: '2px solid #e2e8f0' }}
           />
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={confirmScore} style={buttonStyle('#6366f1')}>
+          <button onClick={confirmScore} style={buttonStyle(theme.accent)}>
             {editingHandIndex !== null ? 'Update' : 'Add Score'}
           </button>
           <button onClick={() => setShowScoreModal(false)} style={buttonStyle('#64748b')}>Cancel</button>
@@ -1711,7 +1773,7 @@ export default function PitchGameTracker() {
                 onClick={() => toggleDealer(p)}
                 style={{
                   padding: '1rem',
-                  background: isSelected ? '#6366f1' : '#f1f5f9',
+                  background: isSelected ? theme.accent : '#f1f5f9',
                   color: isSelected ? 'white' : '#1e293b',
                   borderRadius: '8px',
                   cursor: 'pointer',
@@ -1725,7 +1787,7 @@ export default function PitchGameTracker() {
                 {isSelected && (
                   <span style={{
                     background: 'white',
-                    color: '#6366f1',
+                    color: theme.accent,
                     padding: '0.25rem 0.75rem',
                     borderRadius: '12px',
                     fontWeight: '700',
@@ -1739,7 +1801,7 @@ export default function PitchGameTracker() {
           })}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={confirmDealers} style={buttonStyle('#6366f1')}>Confirm</button>
+          <button onClick={confirmDealers} style={buttonStyle(theme.accent)}>Confirm</button>
           <button onClick={() => setShowDealerModal(false)} style={buttonStyle('#64748b')}>Cancel</button>
         </div>
       </Modal>
@@ -1927,12 +1989,12 @@ const buttonStyle = (bgColor) => ({
   transition: 'all 0.2s'
 });
 
-const inputStyle = {
+const inputStyle = (theme) => ({
   width: '100%',
   padding: '0.75rem',
-  border: '2px solid #334155',
+  border: `2px solid ${theme.panelBorder}`,
   borderRadius: '8px',
-  background: '#0f172a',
-  color: '#e8edf5',
+  background: theme.panelBg2,
+  color: theme.text,
   fontSize: '1rem'
-};
+});

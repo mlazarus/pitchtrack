@@ -13,8 +13,8 @@ function gameCell(index, completedGames, scoreKey) {
   return '–';
 }
 
-export default function TotalSummaryTable({ theme = 'dark', fontScale = 1, teamA, teamB, currentSetGames }) {
-  const isLight = theme === 'light';
+export default function TotalSummaryTable({ theme, fontScale = 1, teamA, teamB, currentSetGames }) {
+  const c = theme;
   const px = (n) => `${n * fontScale}px`;
   const inProgress = currentSetGames.length < GAME_COLUMNS;
   const inProgressGameNumber = currentSetGames.length + 1;
@@ -27,12 +27,12 @@ export default function TotalSummaryTable({ theme = 'dark', fontScale = 1, teamA
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-        <span style={{ fontSize: px(13), fontWeight: 500, color: isLight ? '#1a1a1a' : '#c7c9d4' }}>Total summary</span>
+        <span style={{ fontSize: px(13), fontWeight: 500, color: c.text }}>Total summary</span>
         {inProgress && (
           <span style={{
             fontSize: px(10),
             color: '#8a6a2a',
-            background: isLight ? '#f5e8c8' : '#2a2308',
+            background: c.isDark ? '#2a2308' : '#f5e8c8',
             padding: '2px 8px',
             borderRadius: '999px',
             fontWeight: 500
@@ -41,18 +41,18 @@ export default function TotalSummaryTable({ theme = 'dark', fontScale = 1, teamA
           </span>
         )}
       </div>
-      <div style={{ border: `1px solid ${isLight ? '#b0b0b0' : '#2a2f42'}`, borderRadius: '6px', overflow: 'hidden' }}>
+      <div style={{ border: `1px solid ${c.panelBorder}`, borderRadius: '6px', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: px(12) }}>
           <thead>
-            <tr style={{ background: '#3a4bb8' }}>
-              <th style={{ textAlign: 'left', padding: '7px 10px', fontWeight: 500, color: '#fff' }}>Team</th>
-              <th style={{ textAlign: 'left', padding: '7px 10px', fontWeight: 500, color: '#fff' }}>Players</th>
+            <tr style={{ background: c.accent }}>
+              <th style={{ textAlign: 'left', padding: '7px 10px', fontWeight: 500, color: c.accentText }}>Team</th>
+              <th style={{ textAlign: 'left', padding: '7px 10px', fontWeight: 500, color: c.accentText }}>Players</th>
               {columnIndexes.map(i => (
-                <th key={i} style={{ textAlign: 'right', padding: '7px 10px', fontWeight: 500, color: '#fff' }}>
+                <th key={i} style={{ textAlign: 'right', padding: '7px 10px', fontWeight: 500, color: c.accentText }}>
                   {i + 1}
                 </th>
               ))}
-              <th style={{ textAlign: 'right', padding: '7px 10px', fontWeight: 500, color: '#fff' }}>Current total</th>
+              <th style={{ textAlign: 'right', padding: '7px 10px', fontWeight: 500, color: c.accentText }}>Current total</th>
             </tr>
           </thead>
           <tbody>
