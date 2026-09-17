@@ -13,8 +13,21 @@
         padding: 0;
         box-sizing: border-box;
       }
+      html, body {
+        background: #0b0e17;
+      }
       body {
         font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+      }
+      .game-columns {
+        display: grid;
+        grid-template-columns: 1fr 1.6fr;
+        gap: 20px;
+      }
+      @media (max-width: 860px) {
+        .game-columns {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>

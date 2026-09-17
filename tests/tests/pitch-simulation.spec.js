@@ -97,7 +97,7 @@ async function selectDealers(page, dealers) {
   await page.getByRole('button', { name: 'game' }).click();
   await page.waitForTimeout(500);
 
-  await page.getByRole('button', { name: 'Select Dealers' }).click();
+  await page.getByRole('button', { name: 'Set dealers' }).click();
   await page.waitForTimeout(500);
 
   for (const dealer of dealers) {
@@ -127,9 +127,15 @@ async function enterHand(page, scoreA, scoreB, handIndex) {
   await page.waitForTimeout(500);
 }
 
+// ─── Helper: open the hamburger menu (End set / End session live here) ─────────
+async function openHamburgerMenu(page) {
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.waitForTimeout(300);
+}
+
 // ─── Helper: End Game ─────────────────────────────────────────────────────────
 async function endGame(page, expectedWinner) {
-  await page.getByRole('button', { name: 'End Game' }).click();
+  await page.getByRole('button', { name: 'End game' }).click();
   await page.waitForTimeout(500);
 
   if (expectedWinner === 'TeamA') {
@@ -144,8 +150,9 @@ async function endGame(page, expectedWinner) {
 
 // ─── Helper: End Set ──────────────────────────────────────────────────────────
 async function endSet(page) {
+  await openHamburgerMenu(page);
   const endSetBtn = page.getByRole('button', { name: /end set/i });
-  if (await endSetBtn.isVisible()) {
+  if (await endSetBtn.isVisible() && await endSetBtn.isEnabled()) {
     await endSetBtn.click();
     await page.waitForTimeout(500);
     const confirmBtn = page.getByRole('button', { name: /confirm|yes|ok/i });
@@ -153,12 +160,15 @@ async function endSet(page) {
       await confirmBtn.click();
       await page.waitForTimeout(500);
     }
+  } else {
+    await page.keyboard.press('Escape');
   }
   console.log('✅ Set ended');
 }
 
 // ─── Helper: End Session & Update Leaderboard ─────────────────────────────────
 async function endSession(page) {
+  await openHamburgerMenu(page);
   const endSessionBtn = page.getByRole('button', { name: /end session/i });
   if (await endSessionBtn.isVisible()) {
     await endSessionBtn.click();

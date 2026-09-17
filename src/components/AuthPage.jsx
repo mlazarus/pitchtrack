@@ -8,6 +8,11 @@ const AuthPage = () => {
   const [error, setError] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
 
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+
   const handleSignIn = async (e) => {
     e.preventDefault();
     setError('');
@@ -23,6 +28,30 @@ const AuthPage = () => {
       setLoading(false);
     }
     // If successful, parent component will handle redirect via session change
+  };
+
+  const handleRequestReset = async (e) => {
+    e.preventDefault();
+    setResetError('');
+    setResetLoading(true);
+
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/#reset-password`
+    });
+
+    setResetLoading(false);
+    if (resetErr) {
+      setResetError(resetErr.message);
+    } else {
+      setResetSent(true);
+    }
+  };
+
+  const backToSignIn = () => {
+    setShowResetPassword(false);
+    setResetEmail('');
+    setResetError('');
+    setResetSent(false);
   };
 
   if (showResetPassword) {
@@ -44,9 +73,71 @@ const AuthPage = () => {
           width: '100%'
         }}>
           <h2 style={{ marginBottom: '24px', color: '#333', textAlign: 'center' }}>Reset Password</h2>
-          {/* Reset password form would go here */}
+
+          {resetSent ? (
+            <p style={{ color: '#333', marginBottom: '24px', textAlign: 'center' }}>
+              If an account exists for <strong>{resetEmail}</strong>, a password reset link has been sent to it.
+            </p>
+          ) : (
+            <form onSubmit={handleRequestReset}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontWeight: '500' }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                  disabled={resetLoading}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '16px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {resetError && (
+                <div style={{
+                  padding: '12px',
+                  background: '#fee',
+                  border: '1px solid #fcc',
+                  borderRadius: '6px',
+                  color: '#c33',
+                  marginBottom: '20px',
+                  fontSize: '14px'
+                }}>
+                  {resetError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={resetLoading}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: resetLoading ? '#ccc' : '#667eea',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: resetLoading ? 'not-allowed' : 'pointer',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  marginBottom: '16px'
+                }}
+              >
+                {resetLoading ? 'Sending...' : 'Send Reset Link'}
+              </button>
+            </form>
+          )}
+
           <button
-            onClick={() => setShowResetPassword(false)}
+            onClick={backToSignIn}
             style={{
               width: '100%',
               padding: '12px',
